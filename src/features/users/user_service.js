@@ -14,6 +14,12 @@ async function userLogin(phone , password) {
     }
 
     const user = rows[0];
+    console.log("===", user.is_active);
+
+    if(user.is_active === 0) {
+      return StatusCode.UNAUTHENTICATED("Admin have been ban this user");
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return StatusCode.INVALID_ARGUMENT("Password is not correct!");
@@ -47,17 +53,29 @@ async function userRegister(name , phone , password) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     let sql = `INSERT INTO users (name, phone, password, created_at) VALUES (?, ?, ?, NOW())`;
-    connection = await Mysql.getConnection();
+
     const [result] = await connection.query(sql, [name, phone, hashedPassword]);
 
     if (result.affectedRows === 0) {
       return StatusCode.UNKNOWN("User registration failed");
     }
 
+    const walletSql = 'INSERT INTO wallets (user_id, balance) VALUES (?, 100000)';
+
+    const [walletResult] = await connection.query(walletSql, [result.insertId]);
+
+    if (walletResult.affectedRows === 0) {
+      return StatusCode.UNKNOWN("Wallet creation failed");
+    }
+
+     await connection.commit();
+
+
     return StatusCode.OK("user registered successfully");
 
   } catch (error) {
     console.error("Error registering user:", error);
+     if (connection) await connection.rollback();
     return StatusCode.UNKNOWN("Database error");
   } finally {
     if (connection) connection.release();

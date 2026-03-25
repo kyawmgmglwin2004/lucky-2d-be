@@ -1,13 +1,13 @@
 import { Router } from "express";
-import adminController from "./user_controller.js";
+import userController from "./user_controller.js";
 import authJwt from "../../middlewear/authJwt.js";
 
-const adminRouter = Router();
+const userRouter = Router();
 
-adminRouter.post("/login", adminController.userLogin);
-adminRouter.post("/register", adminController.userRegister);
-adminRouter.get("/me", authJwt.verifyAnyToken, adminController.getUserById);
+userRouter.post("/login", userController.userLogin);
+userRouter.post("/register", userController.userRegister);
+userRouter.get("/me", authJwt.verifyAnyToken, userController.getUserById);
 
 
 
-export default adminRouter;
+export default userRouter   ;

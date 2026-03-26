@@ -10,10 +10,8 @@ async function autoPayout(winningNumber, session, resultDate) {
 
         connection = await Mysql.getConnection();
 
-        // Start transaction
         await connection.beginTransaction();
 
-        // 1. Get payout rate
         const [rateResult] = await connection.query(
             "SELECT rate FROM two_d_lists WHERE numbers = ? LIMIT 1",
             [winningNumber]

@@ -17,11 +17,11 @@ const upload = multer({
 
 const moneyRouter = Router();
 
-moneyRouter.get("/topup/history", authJwt.verifyAdmin, moneyController.getTopupHistory);
-moneyRouter.get("/topup/history/:id", authJwt.verifyAdmin, moneyController.getTopupHistoryDetail);
-moneyRouter.post("/topup/request", authJwt.verifyAdmin, upload.single("image"), moneyController.topupRequest);
-moneyRouter.get("/withdraw/history", authJwt.verifyAdmin, moneyController.getWithdrawHistory);
-moneyRouter.post("/withdraw/request", authJwt.verifyAdmin, moneyController.withdrawRequest);
+moneyRouter.get("/topup/history", authJwt.verifyAnyToken, moneyController.getTopupHistory);
+moneyRouter.get("/topup/history/:id", authJwt.verifyAnyToken, moneyController.getTopupHistoryDetail);
+moneyRouter.post("/topup/request", authJwt.verifyAnyToken, upload.single("image"), moneyController.topupRequest);
+moneyRouter.get("/withdraw/history", authJwt.verifyAnyToken, moneyController.getWithdrawHistory);
+moneyRouter.post("/withdraw/request", authJwt.verifyAnyToken, moneyController.withdrawRequest);
 
 export default moneyRouter;
 

@@ -76,15 +76,30 @@ async function createNewNumbersList(category_key , numbers) {
 }
 
 async function betTwoD(user_id, bets, type) {
-    console.log("reach");
     console.log(user_id, bets, type);
     let connection;
     try {
+
         if (!user_id || !type || !bets || bets.length === 0) {
             return StatusCode.INVALID_ARGUMENT("Invalid arguments or no numbers selected");
         }
 
-        console.log("userId", user_id);
+       function getSession() {
+            const now = new Date().toLocaleString("en-US", {
+                timeZone: "Asia/Yangon"
+            });
+
+            const date = new Date(now);
+
+            const currentTime = date.getHours() * 60 + date.getMinutes();
+
+            const morningEnd = 12 * 60; 
+
+            return currentTime < morningEnd ? "morning" : "evening";
+        }
+
+         const session = getSession();
+
         const seenNumbers = new Set();
         let totalBetAmount = 0;
 
@@ -156,8 +171,8 @@ async function betTwoD(user_id, bets, type) {
 
         const batchId = "BATCH_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
 
-        const insertBetSql = `INSERT INTO bets (batch_id, user_id, number, amount, type, bet_date) 
-                              VALUES (?, ?, ?, ?, ?, NOW())`;
+        const insertBetSql = `INSERT INTO bets (batch_id, user_id, number, amount, type, session,  bet_date) 
+                              VALUES (?, ?, ?, ?, ?, ?, CURDATE())`;
 
         const updateListSql = `UPDATE two_d_lists SET amounts = amounts + ? WHERE numbers = ?`;
 
@@ -167,7 +182,8 @@ async function betTwoD(user_id, bets, type) {
                 user_id, 
                 item.number, 
                 item.amount, 
-                type 
+                type,
+                session
             ]);
 
             await connection.query(updateListSql, [item.amount, item.number]);

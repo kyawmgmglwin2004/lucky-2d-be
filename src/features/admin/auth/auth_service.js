@@ -33,6 +33,55 @@ async function adminLogin(phone, password, businessId) {
     }
 }
 
+async function saveRefreshToken(adminId, refreshToken) {
+    let connection;
+    try {
+        if (!adminId || !refreshToken) {
+            return StatusCode.INVALID_ARGUMENT("Missing adminId or refreshToken");
+        }
+
+        const sql = `UPDATE admins SET refresh_token = ? WHERE id = ?`;
+        connection = await Mysql.getConnection();
+        const [result] = await connection.query(sql, [refreshToken, adminId]);
+
+        if (result.affectedRows === 0) {
+            return StatusCode.UNKNOWN("Refresh token save failed");
+        }
+
+        return StatusCode.OK("Refresh token saved successfully");
+    } catch (error) {
+        console.error("Error saving refresh token:", error);
+        return StatusCode.UNKNOWN("Database error");
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
+async function findAdminByRefreshToken(refreshToken) {
+    let connection;
+    try {
+        if (!refreshToken) {
+            return StatusCode.INVALID_ARGUMENT("Missing refreshToken");
+        }
+
+        connection = await Mysql.getConnection();
+        const sql = `SELECT * FROM admins WHERE refresh_token = ?`;
+        const [rows] = await connection.query(sql, [refreshToken]);
+
+        if (rows.length === 0) {
+            return StatusCode.NOT_FOUND("Admin not found");
+        }
+
+        const admin = rows[0];
+        return StatusCode.OK("Admin found", admin);
+    } catch (error) {
+        console.error("Error finding admin:", error);
+        return StatusCode.UNKNOWN("Database error");
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
 async function adminRegister(userName, phone, password, businessId) {
     let connection;
     try {
@@ -54,7 +103,7 @@ async function adminRegister(userName, phone, password, businessId) {
         const [result] = await connection.query(sql, [userName, phone, hashedPassword, businessId]);
 
         if (result.affectedRows === 0) {
-            return StatusCode.UNKNOWN("Admin registration failed");         
+            return StatusCode.UNKNOWN("Admin registration failed");
         }
 
         return StatusCode.OK("Admin registered successfully");
@@ -69,4 +118,6 @@ async function adminRegister(userName, phone, password, businessId) {
 export default {
     adminLogin,
     adminRegister,
+    saveRefreshToken,
+    findAdminByRefreshToken
 };

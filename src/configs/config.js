@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 
-dotenv.config(); // Load .env variables
+dotenv.config();
 console.log("Config : ", {
   PORT: process.env.PORT,
   DB_PORT: process.env.DB_PORT,

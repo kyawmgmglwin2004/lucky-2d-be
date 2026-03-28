@@ -1,14 +1,19 @@
 import authJwt from "../../../middlewear/authJwt.js";
 import adminService from "./auth_service.js";
 import StatusCode from "../../../helper/statusCode.js";
+import jwt from "jsonwebtoken";
+import { config } from "../../../configs/config.js";
+
+const ADM_SECRET = config.ADM_JWT_SECRET;
 
 async function adminLogin(req, res) {
     try {
         const { phone, password, businessId } = req.body;
         console.log("Admin login request body:", req.body);
-        if (!phone || isNaN(phone) || !password || !businessId || isNaN(businessId) || typeof phone !== 'string' || typeof password !== 'string' || typeof businessId !== 'string' ) {
+        if (!phone || isNaN(phone) || !password || !businessId || isNaN(businessId) || typeof phone !== 'string' || typeof password !== 'string' || typeof businessId !== 'string') {
             return res.status(400).json(StatusCode.INVALID_ARGUMENT("Missing phone, password, or businessId"));
         }
+
         const serviceRes = await adminService.adminLogin(phone, password, businessId);
 
         if (serviceRes.code === 200) {
@@ -17,20 +22,60 @@ async function adminLogin(req, res) {
             }
 
             const admin = serviceRes.data;
-            const token = authJwt.signAdminToken(admin);
+            const accessToken = authJwt.signAdminAccessToken(admin);
+            const refreshToken = authJwt.signAdminRefreshToken(admin);
             console.log("Admin login successful========:", admin);
-        
-            return res.status(200).json(StatusCode.OK("Login success", { admin, token }));
+            console.log("Access Token========:", accessToken);
+            console.log("Refresh Token========:", refreshToken);
+            await adminService.saveRefreshToken(admin.id, refreshToken);
+
+            res.cookie('refreshToken', refreshToken, {
+                httpOnly: true, // JavaScript မှ access လုပ်လို့မရ
+                maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ရက်
+                // secure: true, // Production တွင် enable လုပ်ပါ (HTTPS)
+                // sameSite: 'strict'
+            });
+
+            return res.status(200).json(StatusCode.OK("Login success", { admin, accessToken }));
         }
 
         return res.status(serviceRes.code).json(serviceRes);
 
     } catch (error) {
-         console.error("Error admin login action:", error);
+        console.error("Error admin login action:", error);
 
         return res.status(500).json(StatusCode.UNKNOWN("SERVER ERROR"));
     }
 }
+
+async function adminRefreshToken(req, res) {
+    try {
+        const requestToken = req.cookies?.refreshToken;
+
+        if (!requestToken) {
+            return res.status(401).json(StatusCode.UNAUTHENTICATED("No Refresh Token"));
+        }
+
+        const admin = await adminService.findAdminByRefreshToken(requestToken);
+        if (!admin) {
+            return res.status(403).json(StatusCode.FORBIDDEN("Invalid Refresh Token"));
+        }
+        jwt.verify(requestToken, ADM_SECRET, (err, decoded) => {
+            if (err || admin.id !== decoded.id) {
+                return res.status(403).json(StatusCode.FORBIDDEN("Token verification failed"));
+            }
+
+            const newAccessToken = authJwt.signAdminAccessToken(admin);
+
+            return res.status(200).json(StatusCode.OK("Token Refreshed", { accessToken: newAccessToken }));
+        });
+
+    } catch (error) {
+        console.error("Refresh Token Error:", error);
+        return res.status(500).json(StatusCode.UNKNOWN("SERVER ERROR"));
+    }
+}
+
 
 async function adminRegister(req, res) {
     try {
@@ -47,7 +92,7 @@ async function adminRegister(req, res) {
         return res.status(serviceRes.code).json(serviceRes);
 
     } catch (error) {
-         console.error("Error admin register action:", error);
+        console.error("Error admin register action:", error);
 
         return res.status(500).json(StatusCode.UNKNOWN("SERVER ERROR"));
     }
@@ -55,5 +100,6 @@ async function adminRegister(req, res) {
 
 export default {
     adminLogin,
-    adminRegister
+    adminRegister,
+    adminRefreshToken
 };

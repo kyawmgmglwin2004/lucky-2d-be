@@ -7,7 +7,6 @@ const userRouter = Router();
 userRouter.post("/login", userController.userLogin);
 userRouter.post("/register", userController.userRegister);
 userRouter.get("/me", authJwt.verifyAnyToken, userController.getUserById);
+userRouter.post("/refresh-token", userController.userRefreshToken);
 
-
-
-export default userRouter   ;
+export default userRouter;

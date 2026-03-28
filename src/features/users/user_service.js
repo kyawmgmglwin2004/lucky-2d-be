@@ -2,9 +2,14 @@ import Mysql from "../../helper/db.js";
 import StatusCode from "../../helper/statusCode.js";
 import bcrypt from "bcrypt";
 
-async function userLogin(phone , password) {
+async function userLogin(phone, password) {
   let connection;
   try {
+
+    if (!phone || !password) {
+      return StatusCode.INVALID_ARGUMENT("Missing required fields");
+    }
+
     const sql = `SELECT * FROM users WHERE phone = ?`;
     connection = await Mysql.getConnection();
     const [rows] = await connection.query(sql, [phone]);
@@ -16,7 +21,7 @@ async function userLogin(phone , password) {
     const user = rows[0];
     console.log("===", user.is_active);
 
-    if(user.is_active === 0) {
+    if (user.is_active === 0) {
       return StatusCode.UNAUTHENTICATED("Admin have been ban this user");
     }
 
@@ -26,7 +31,7 @@ async function userLogin(phone , password) {
     }
     console.log("User login successful:", user);
 
-    return StatusCode.OK("login success",  user );
+    return StatusCode.OK("login success", user);
   } catch (error) {
     console.error("Error fetching user:", error);
     return StatusCode.UNKNOWN("Database error");
@@ -35,7 +40,59 @@ async function userLogin(phone , password) {
   }
 }
 
-async function userRegister(name , phone , password) {
+
+async function saveRefreshToken(userId, refreshToken) {
+  let connection;
+  try {
+    if (!userId || !refreshToken) {
+      return StatusCode.INVALID_ARGUMENT("Missing required fields");
+    }
+
+    const sql = `UPDATE users SET refresh_token = ? WHERE id = ?`;
+
+    connection = await Mysql.getConnection();
+    const [result] = await connection.query(sql, [refreshToken, userId]);
+    if (result.affectedRows === 0) {
+      return StatusCode.UNKNOWN("Refresh token save failed");
+    }
+
+    return StatusCode.OK("Refresh token saved successfully");
+
+  } catch (error) {
+    console.error("Error saving refresh token:", error);
+    return StatusCode.UNKNOWN("Database error");
+  } finally {
+    if (connection) connection.release();
+  }
+}
+
+async function findUserByRefreshToken(refreshToken) {
+  let connection;
+  try {
+    if (!refreshToken) {
+      return StatusCode.INVALID_ARGUMENT("Missing refreshToken");
+    }
+
+    const sql = `SELECT * FROM users WHERE refresh_token = ?`;
+
+    connection = await Mysql.getConnection();
+    const [rows] = await connection.query(sql, [refreshToken]);
+    if (rows.length === 0) {
+      return StatusCode.NOT_FOUND("User not found");
+    }
+
+    const user = rows[0];
+    return StatusCode.OK("User found", user);
+
+  } catch (error) {
+    console.error("Error finding user:", error);
+    return StatusCode.UNKNOWN("Database error");
+  } finally {
+    if (connection) connection.release();
+  }
+}
+
+async function userRegister(name, phone, password) {
   let connection;
   try {
     if (!name || !phone || !password) {
@@ -68,14 +125,14 @@ async function userRegister(name , phone , password) {
       return StatusCode.UNKNOWN("Wallet creation failed");
     }
 
-     await connection.commit();
+    await connection.commit();
 
 
     return StatusCode.OK("user registered successfully");
 
   } catch (error) {
     console.error("Error registering user:", error);
-     if (connection) await connection.rollback();
+    if (connection) await connection.rollback();
     return StatusCode.UNKNOWN("Database error");
   } finally {
     if (connection) connection.release();
@@ -96,7 +153,7 @@ async function getUserById(userId) {
         LEFT JOIN wallets w ON u.id = w.user_id
         WHERE u.id = ?
     `;
-    
+
     connection = await Mysql.getConnection();
     const [rows] = await connection.query(sql, [userId]);
 
@@ -106,7 +163,7 @@ async function getUserById(userId) {
 
     const user = rows[0];
     return StatusCode.OK("User retrieved successfully", user);
-    
+
   } catch (error) {
     console.error("Error fetching user by ID:", error);
     return StatusCode.UNKNOWN("Database error");
@@ -117,7 +174,9 @@ async function getUserById(userId) {
 
 
 export default {
-    userLogin,
-    userRegister,
-    getUserById
+  userLogin,
+  userRegister,
+  getUserById,
+  saveRefreshToken,
+  findUserByRefreshToken
 }

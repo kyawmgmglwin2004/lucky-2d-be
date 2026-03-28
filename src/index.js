@@ -1,7 +1,8 @@
 import express from "express";
-import {config} from "./configs/config.js";
+import { config } from "./configs/config.js";
 import router from "./router.js";
 import cors from "cors"
+// import "./features/2d_result/cron_job.js";
 
 
 const app = express();
@@ -19,12 +20,12 @@ app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 
 app.use(express.urlencoded({ extended: true }));
-app.get("/",(req,res)=>{
+app.get("/", (req, res) => {
   console.log("Hello world")
   res.json("This is testing")
 })
 app.use("/api/v1", router);
-app.get("/test", (req , res) => {
+app.get("/test", (req, res) => {
   console.log("Uploads : ", req.params)
   res.send("KO kO")
 })

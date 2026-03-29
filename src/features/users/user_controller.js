@@ -26,6 +26,7 @@ async function userLogin(req, res) {
                 httpOnly: true,
                 secure: true, // true only if HTTPS
                 sameSite: "None", // or "None" (cross-origin)
+                domain: ".gttechsolutions.online",
                 maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days   
             });
 

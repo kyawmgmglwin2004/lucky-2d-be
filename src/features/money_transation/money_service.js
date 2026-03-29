@@ -18,7 +18,7 @@ async function getTopupHistory(userId, transactionType) {
         }
 
         return StatusCode.OK("Top-up history retrieved successfully", rows);
-       
+
     } catch (error) {
         console.error("Error fetching top-up history:", error);
         return StatusCode.UNKNOWN("Database error");
@@ -44,14 +44,14 @@ async function getTopupHistoryDetail(id, transactionType) {
         }
 
         return StatusCode.OK("Top-up history detail retrieved successfully", rows[0]);
-       
+
     } catch (error) {
         console.error("Error fetching top-up history detail:", error);
         return StatusCode.UNKNOWN("Database error");
     } finally {
         if (connection) connection.release();
     }
-    
+
 }
 
 async function topupRequest(userId, amount, transactionType, paymentMethod, status, imageUrl, slipId) {
@@ -73,18 +73,18 @@ async function topupRequest(userId, amount, transactionType, paymentMethod, stat
         }
 
         return StatusCode.OK("Top-up request submitted successfully");
-       
+
     } catch (error) {
         console.error("Error submitting top-up request:", error);
         return StatusCode.UNKNOWN("Database error");
     } finally {
         if (connection) connection.release();
-    } 
+    }
 }
 
-async function getWithDrawHistory(userId , transcationType) {
+async function getWithDrawHistory(userId, transcationType) {
     let connection;
-    try{
+    try {
 
         if (!userId || isNaN(userId) || typeof userId !== 'number' || !transcationType || typeof transcationType !== 'string') {
             return StatusCode.INVALID_ARGUMENT("Invalid user ID or transaction type");
@@ -98,9 +98,9 @@ async function getWithDrawHistory(userId , transcationType) {
             return StatusCode.NOT_FOUND("No withdraw history found for this user");
         }
 
-        return StatusCode.OK("Withdraw history retrieved successfully", rows); 
+        return StatusCode.OK("Withdraw history retrieved successfully", rows);
 
-    }catch(error) {
+    } catch (error) {
         console.error("Error fetching withdraw history:", error);
         return StatusCode.UNKNOWN("Database error");
     } finally {
@@ -111,17 +111,17 @@ async function getWithDrawHistory(userId , transcationType) {
 async function withdrawRequest(userId, password, amount, transactionType, paymentMethod, status, bankAccountName, bankAccountNumber) {
     let connection;
     console.log("reached OKOKOKOKOKOKOKOKOKOKOKOKOKOKOKOKOKOKOKOKOKOKOK");
-    
+
     console.log("Received withdraw request data:", { userId, amount, transactionType });
-    
+
     try {
-        if (!userId || isNaN(userId) || typeof userId !== 'number' || 
-            !password || typeof password !== 'string' || 
-            !amount || isNaN(amount) || typeof amount !== 'number' || 
-            !transactionType || typeof transactionType !== 'string' || 
-            !paymentMethod || typeof paymentMethod !== 'string' || 
-            !status || typeof status !== 'string' || 
-            !bankAccountName || typeof bankAccountName !== 'string' || 
+        if (!userId || isNaN(userId) || typeof userId !== 'number' ||
+            !password || typeof password !== 'string' ||
+            !amount || isNaN(amount) || typeof amount !== 'number' ||
+            !transactionType || typeof transactionType !== 'string' ||
+            !paymentMethod || typeof paymentMethod !== 'string' ||
+            !status || typeof status !== 'string' ||
+            !bankAccountName || typeof bankAccountName !== 'string' ||
             !bankAccountNumber || typeof bankAccountNumber !== 'string') {
             return StatusCode.INVALID_ARGUMENT("Invalid withdraw request data");
         }
@@ -137,12 +137,12 @@ async function withdrawRequest(userId, password, amount, transactionType, paymen
 
         const storedHashedPassword = pswRows[0].password;
 
-       
+
         const isPasswordValid = await bcrypt.compare(password, storedHashedPassword);
 
         if (!isPasswordValid) {
             return StatusCode.PERMISSION_DENIED("Incorrect password");
-        } 
+        }
 
         const amountSql = 'SELECT balance FROM wallets WHERE user_id = ?';
 
@@ -159,7 +159,7 @@ async function withdrawRequest(userId, password, amount, transactionType, paymen
         }
 
         const sql = `INSERT INTO money_transactions (user_id, amount, transaction_type, payment_method, status, bank_account_name, bank_account_number, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`;
-        
+
         const [result] = await connection.query(sql, [userId, amount, transactionType, paymentMethod, status, bankAccountName, bankAccountNumber]);
 
         if (result.affectedRows === 0) {
@@ -167,14 +167,14 @@ async function withdrawRequest(userId, password, amount, transactionType, paymen
         }
 
         return StatusCode.OK("Withdraw request submitted successfully");
-       
+
     } catch (error) {
         console.error("Error submitting withdraw request:", error);
         return StatusCode.UNKNOWN("Database error");
     } finally {
         // 7. Release connection once at the end
         if (connection) connection.release();
-    } 
+    }
 }
 
 export default {

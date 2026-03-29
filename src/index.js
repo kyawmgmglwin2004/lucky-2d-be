@@ -2,19 +2,21 @@ import express from "express";
 import { config } from "./configs/config.js";
 import router from "./router.js";
 import cors from "cors"
+import cookieParser from "cookie-parser";
 // import "./features/2d_result/cron_job.js";
 
 
 const app = express();
 
 
-const allowedOrigins = ["*"];
+app.use(cors({
+  origin: ["http://192.168.1.10:5173", "http://localhost:5173", "https://2d.gttechsolutions.online"],
 
-app.use(
-  cors({
-    origin: allowedOrigins,
-  })
-);
+  credentials: true
+}));
+
+
+app.use(cookieParser());
 app.use(express.json());
 
 app.use('/uploads', express.static('uploads'));
@@ -34,6 +36,6 @@ console.log("App.JS port : ", config.PORT)
 
 
 const PORT = config.PORT || 5000;
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server is running on port ${PORT}`);
 });

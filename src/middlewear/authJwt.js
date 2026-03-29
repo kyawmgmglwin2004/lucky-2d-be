@@ -6,22 +6,6 @@ import { config } from "../configs/config.js";
 const User_SECRET = config.JWT_SECRET;
 const ADM_SECRET = config.ADM_JWT_SECRET;
 
-function signAdminToken(admin, options = {}) {
-  const payload = {
-    id: admin.id,
-    userName: admin.userName,
-    email: admin.phone,
-    businessId: admin.business_id,
-    role: "admin",
-  };
-
-  const signOptions = {
-    expiresIn: options.expiresIn || config.JWT_EXPIRES_IN,
-  };
-
-  return jwt.sign(payload, ADM_SECRET, signOptions);
-}
-
 function signAdminAccessToken(admin) {
   const payload = {
     id: admin.id,
@@ -32,7 +16,7 @@ function signAdminAccessToken(admin) {
   };
 
   const signOptions = {
-    expiresIn: "15m",
+    expiresIn: "1m",
   };
 
   return jwt.sign(payload, ADM_SECRET, signOptions);
@@ -64,7 +48,7 @@ function signUserAccessToken(user) {
   };
 
   const signOptions = {
-    expiresIn: "15m",
+    expiresIn: "1m",
   };
 
   return jwt.sign(payload, User_SECRET, signOptions);
@@ -74,28 +58,10 @@ function signUserAccessToken(user) {
 function signUserRefreshToken(user) {
   const payload = {
     id: user.id,
-    name: user.name,
-    phone: user.phone,
-    role: "user",
   };
 
   const signOptions = {
     expiresIn: "7d",
-  };
-
-  return jwt.sign(payload, User_SECRET, signOptions);
-}
-
-function signCustomerToken(user, options = {}) {
-  const payload = {
-    id: user.id,
-    name: user.name,
-    phone: user.phone,
-    role: "user",
-  };
-
-  const signOptions = {
-    expiresIn: options.expiresIn || "24h",
   };
 
   return jwt.sign(payload, User_SECRET, signOptions);
@@ -177,12 +143,10 @@ const verifyAnyToken = verifyToken();
 const verifyAdmin = verifyAdminToken();
 
 export default {
-  signAdminToken,
   signAdminAccessToken,
   signAdminRefreshToken,
   signUserAccessToken,
   signUserRefreshToken,
-  signCustomerToken,
   verifyAnyToken,
   verifyAdmin
 };

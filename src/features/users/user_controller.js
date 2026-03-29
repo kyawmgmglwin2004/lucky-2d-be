@@ -4,7 +4,7 @@ import StatusCodes from "../../helper/statusCode.js";
 import jwt from "jsonwebtoken";
 import { config } from "../../configs/config.js";
 
-const USER_SECRET = config.USER_JWT_SECRET;
+const USER_SECRET = config.JWT_SECRET;
 
 async function userLogin(req, res) {
     try {
@@ -19,14 +19,14 @@ async function userLogin(req, res) {
             console.log("login user:", serviceRes.data);
             const user = serviceRes.data;
             const accessToken = authJwt.signUserAccessToken(user);
-            const refreshToken = authJwt.signUserRefreshToken(user);
-            await userService.saveRefreshToken(user.id, refreshToken);
+            const userRefreshToken = authJwt.signUserRefreshToken(user);
+            await userService.saveRefreshToken(user.id, userRefreshToken);
 
-            res.cookie("refreshToken", refreshToken, {
+            res.cookie("userRefreshToken", userRefreshToken, {
                 httpOnly: true,
-                // secure: true,
-                // sameSite: "strict",
-                maxAge: 7 * 24 * 60 * 60 * 1000,
+                secure: false, // true only if HTTPS
+                sameSite: "Lax", // or "None" (cross-origin)
+                maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days   
             });
 
             return res.status(200).json(StatusCodes.OK("login success", { user, accessToken }));
@@ -43,19 +43,25 @@ async function userLogin(req, res) {
 
 async function userRefreshToken(req, res) {
     try {
-        const requestToken = req.cookies?.refreshToken;
+        const requestToken = req.cookies?.userRefreshToken;
         if (!requestToken) {
             return res.status(401).json(StatusCodes.UNAUTHENTICATED("No Refresh Token"));
         }
         const user = await userService.findUserByRefreshToken(requestToken);
         if (!user) {
-            return res.status(403).json(StatusCodes.FORBIDDEN("Invalid Refresh Token"));
+            return res.status(401).json(StatusCodes.UNAUTHENTICATED("Invalid Refresh Token"));
         }
+        console.log("user : ", user);
+        console.log("secret : ", USER_SECRET);
         jwt.verify(requestToken, USER_SECRET, (err, decoded) => {
-            if (err || user.id !== decoded.id) {
-                return res.status(403).json(StatusCodes.FORBIDDEN("Token verification failed"));
+            if (err || user.data.id !== decoded.id) {
+
+                console.log("Token verification failed", err, decoded, user.data.id);
+
+                return res.status(401).json(StatusCodes.UNAUTHENTICATED("Token verification failed"));
             }
-            const newAccessToken = authJwt.signUserAccessToken(user);
+            const userData = user.data;
+            const newAccessToken = authJwt.signUserAccessToken(userData);
             return res.status(200).json(StatusCodes.OK("Token Refreshed", { accessToken: newAccessToken }));
         });
     } catch (error) {

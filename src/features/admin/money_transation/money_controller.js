@@ -31,10 +31,11 @@ async function getAllWithdrawHistory(req, res) {
 
 async function comfrimTopUpRequest(req, res) {
     try {
+        console.log("BODY:", req.body);
+        console.log("HEADERS:", req.headers);
         const transactionType = 'topup';
         const status = req.body.status;
         const id = parseInt(req.params.id);
-        console.log("======", id, status)
 
         const topup = await moneyService.comfrimRequest(id, status, transactionType);
         res.status(topup.code).json(topup);

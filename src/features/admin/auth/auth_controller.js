@@ -31,8 +31,8 @@ async function adminLogin(req, res) {
 
             res.cookie('adminRefreshToken', adminRefreshToken, {
                 httpOnly: true,
-                secure: false, // true only if HTTPS
-                sameSite: "Lax", // or "None" (cross-origin)
+                secure: true, // true only if HTTPS
+                sameSite: "None", // or "None" (cross-origin)
                 maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
             });
 

@@ -136,7 +136,7 @@ async function deletePhone(id) {
         if (!id) {
             return StatusCode.INVALID_ARGUMENT("Missing phone number id");
         }
-
+        console.log("id", id);
         const sql1 = "SELECT * FROM transaction_phones WHERE id = ?";
         connection = await Mysql.getConnection();
         const [rows] = await connection.query(sql1, [id]);

@@ -6,7 +6,7 @@ const phoneRouter = Router();
 
 phoneRouter.post("/create", authJwt.verifyAdmin, phoneController.createPhone);
 phoneRouter.post("/update/:id", authJwt.verifyAdmin, phoneController.updatePhone);
-phoneRouter.post("/delete/:id", authJwt.verifyAdmin, phoneController.deletePhone);
+phoneRouter.delete("/delete/:id", authJwt.verifyAdmin, phoneController.deletePhone);
 phoneRouter.get("/get-all", authJwt.verifyAdmin, phoneController.getAllPhone);
 
 export default phoneRouter;

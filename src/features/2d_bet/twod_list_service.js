@@ -1,5 +1,5 @@
 import StatusCode from "../../helper/statusCode.js";
-import Mysql from "../../helper/db.js"; 
+import Mysql from "../../helper/db.js";
 
 async function twoDList(category_key, page, limit) {
     let connection;
@@ -54,14 +54,14 @@ async function twoDList(category_key, page, limit) {
     }
 }
 
-async function createNewNumbersList(category_key , numbers) {
+async function createNewNumbersList(category_key, numbers) {
     let connection;
     try {
-        
+
         const numbersJson = Array.isArray(numbers) ? JSON.stringify(numbers) : numbers;
 
         const sql = "INSERT INTO two_d_master_sets (category_key,  numbers) VALUES (?, ?)";
-        
+
         connection = await Mysql.getConnection();
         const [result] = await connection.query(sql, [category_key, numbersJson]);
 
@@ -84,7 +84,7 @@ async function betTwoD(user_id, bets, type) {
             return StatusCode.INVALID_ARGUMENT("Invalid arguments or no numbers selected");
         }
 
-       function getSession() {
+        function getSession() {
             const now = new Date().toLocaleString("en-US", {
                 timeZone: "Asia/Yangon"
             });
@@ -93,12 +93,12 @@ async function betTwoD(user_id, bets, type) {
 
             const currentTime = date.getHours() * 60 + date.getMinutes();
 
-            const morningEnd = 12 * 60; 
+            const morningEnd = 12 * 60;
 
             return currentTime < morningEnd ? "morning" : "evening";
         }
 
-         const session = getSession();
+        const session = getSession();
 
         const seenNumbers = new Set();
         let totalBetAmount = 0;
@@ -109,7 +109,7 @@ async function betTwoD(user_id, bets, type) {
             if (seenNumbers.has(numStr)) {
                 return StatusCode.INVALID_ARGUMENT(`Duplicate number found: ${item.number}. Please remove duplicates.`);
             }
-            
+
             seenNumbers.add(numStr);
             totalBetAmount += Number(item.amount);
         }
@@ -135,7 +135,7 @@ async function betTwoD(user_id, bets, type) {
         const placeholders = numbersToCheck.map(() => '?').join(',');
 
         const checkLimitSql = `SELECT numbers, amounts, status_limit_amount FROM two_d_lists WHERE numbers IN (${placeholders})`;
-        
+
         console.log("Checking Limit SQL:", checkLimitSql, numbersToCheck);
 
         const [limitRows] = await connection.query(checkLimitSql, numbersToCheck);
@@ -149,7 +149,7 @@ async function betTwoD(user_id, bets, type) {
         });
 
         for (const item of bets) {
-            const numKey = String(item.number); 
+            const numKey = String(item.number);
             const data = listData[numKey];
 
             if (!data) {
@@ -178,16 +178,16 @@ async function betTwoD(user_id, bets, type) {
 
         for (const item of bets) {
             await connection.query(insertBetSql, [
-                batchId, 
-                user_id, 
-                item.number, 
-                item.amount, 
+                batchId,
+                user_id,
+                item.number,
+                item.amount,
                 type,
                 session
             ]);
 
             await connection.query(updateListSql, [item.amount, item.number]);
-        } 
+        }
 
         await connection.commit();
 
@@ -195,7 +195,7 @@ async function betTwoD(user_id, bets, type) {
 
     } catch (error) {
         if (connection) await connection.rollback();
-        
+
         console.error("Error placing bet:", error);
         return StatusCode.UNKNOWN("Database error");
     } finally {
@@ -207,16 +207,16 @@ async function betTwoD(user_id, bets, type) {
 async function betTwoDListByUserId(userId) {
     let connection;
     try {
-        if(!userId ) {
+        if (!userId) {
             return StatusCode.INVALID_ARGUMENT("missing userId for get 2d bet list");
         }
 
         connection = await Mysql.getConnection();
-        const sql = `SELECT * FROM bets WHERE user_id = ?`
+        const sql = `SELECT * FROM bets WHERE user_id = ? ORDER BY id DESC`;
 
         const [result] = await connection.query(sql, userId);
 
-        if(result.affectedRows === 0) {
+        if (result.affectedRows === 0) {
             return StatusCode.NOT_FOUND("2d bets list not found for this user");
         }
         return StatusCode.OK("2d bet histroy", result);

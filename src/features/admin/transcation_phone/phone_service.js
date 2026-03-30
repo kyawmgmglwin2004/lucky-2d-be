@@ -4,7 +4,7 @@ import StatusCode from "../../../helper/statusCode.js";
 async function getAllPhone() {
     let connection;
     try {
-        const sql = `SELECT * FROM transcation_phone`;
+        const sql = `SELECT * FROM transaction_phones`;
         connection = await Mysql.getConnection();
         const [rows] = await connection.query(sql);
         if (rows.length === 0) {
@@ -19,15 +19,32 @@ async function getAllPhone() {
     }
 }
 
-async function createPhone(phone_number, account_name, type) {
+async function createPhone(phone_numbers, acc_name, type) {
     let connection;
     try {
-        if (!phone_number || typeof phone_number !== "string" || !account_name || typeof account_name !== "string" || !type || typeof type !== "string") {
+        console.log("phone_number", phone_numbers);
+
+        if (!phone_numbers || typeof phone_numbers !== "string" || !acc_name || typeof acc_name !== "string" || !type || typeof type !== "string") {
             return StatusCode.INVALID_ARGUMENT("Missing phone number, account name, or type");
         }
-        const sql = `INSERT INTO transcation_phone (phone_number, account_name, type) VALUES (?, ?, ?)`;
+
+        const sql1 = `SELECT * FROM transaction_phones WHERE phone_numbers = ?`;
         connection = await Mysql.getConnection();
-        const [result] = await connection.query(sql, [phone_number, account_name, type]);
+        const [rows] = await connection.query(sql1, [phone_numbers]);
+        if (rows.length > 0) {
+            return StatusCode.INVALID_ARGUMENT("Phone number already exists");
+        }
+
+        const sql2 = `SELECT * FROM transaction_phones WHERE type = ?`;
+        connection = await Mysql.getConnection();
+        const [rows2] = await connection.query(sql2, [type]);
+        if (rows2.length > 0) {
+            return StatusCode.INVALID_ARGUMENT("Type already exists");
+        }
+
+        const sql = `INSERT INTO transaction_phones (phone_numbers, acc_name, type) VALUES (?, ?, ?)`;
+        connection = await Mysql.getConnection();
+        const [result] = await connection.query(sql, [phone_numbers, acc_name, type]);
         if (result.affectedRows === 0) {
             return StatusCode.UNKNOWN("Phone number creation failed");
         }
@@ -40,21 +57,73 @@ async function createPhone(phone_number, account_name, type) {
     }
 }
 
-async function updatePhone(id, phone_number, account_name, type) {
+async function updatePhone(id, phone_numbers, acc_name, type) {
     let connection;
+
     try {
-        if (!id || typeof id !== "number" || !phone_number || typeof phone_number !== "string" || !account_name || typeof account_name !== "string" || !type || typeof type !== "string") {
-            return StatusCode.INVALID_ARGUMENT("Missing phone number, account name, or type");
+        if (!id || typeof id !== "number") {
+            return StatusCode.INVALID_ARGUMENT("Invalid ID");
         }
-        const sql = `UPDATE transcation_phone SET phone_number = ?, account_name = ?, type = ? WHERE id = ?`;
+
+        const fields = [];
+        const values = [];
+
+        if (phone_numbers && typeof phone_numbers === "string") {
+            fields.push("phone_numbers = ?");
+            values.push(phone_numbers);
+        }
+
+        if (acc_name && typeof acc_name === "string") {
+            fields.push("acc_name = ?");
+            values.push(acc_name);
+        }
+
+        if (type && typeof type === "string") {
+            fields.push("type = ?");
+            values.push(type);
+        }
+
+        if (fields.length === 0) {
+            return StatusCode.INVALID_ARGUMENT("No fields to update");
+        }
+
         connection = await Mysql.getConnection();
-        const [result] = await connection.query(sql, [phone_number, account_name, type, id]);
-        if (result.affectedRows === 0) {
-            return StatusCode.UNKNOWN("Phone number update failed");
+
+        if (phone_numbers) {
+            const [rows] = await connection.query(
+                "SELECT id FROM transaction_phones WHERE phone_numbers = ? AND id != ?",
+                [phone_numbers, id]
+            );
+
+            if (rows.length > 0) {
+                return StatusCode.INVALID_ARGUMENT("Phone number already exists");
+            }
         }
-        return StatusCode.OK("Phone number updated successfully");
+
+        if (type) {
+            const [rows] = await connection.query(
+                "SELECT id FROM transaction_phones WHERE type = ? AND id != ?",
+                [type, id]
+            );
+
+            if (rows.length > 0) {
+                return StatusCode.INVALID_ARGUMENT("Type already exists");
+            }
+        }
+
+        values.push(id);
+        const sql = `UPDATE transaction_phones SET ${fields.join(", ")} WHERE id = ?`;
+
+        const [result] = await connection.query(sql, values);
+
+        if (result.affectedRows === 0) {
+            return StatusCode.NOT_FOUND("Phone not found");
+        }
+
+        return StatusCode.OK("Updated successfully");
+
     } catch (error) {
-        console.error("Error updating phone number:", error);
+        console.error("Error updating phone:", error);
         return StatusCode.UNKNOWN("Database error");
     } finally {
         if (connection) connection.release();
@@ -67,8 +136,15 @@ async function deletePhone(id) {
         if (!id) {
             return StatusCode.INVALID_ARGUMENT("Missing phone number id");
         }
-        const sql = `DELETE FROM transcation_phone WHERE id = ?`;
+
+        const sql1 = "SELECT * FROM transaction_phones WHERE id = ?";
         connection = await Mysql.getConnection();
+        const [rows] = await connection.query(sql1, [id]);
+        if (rows.length === 0) {
+            return StatusCode.NOT_FOUND("Phone number not found");
+        }
+
+        const sql = `DELETE FROM transaction_phones WHERE id = ?`;
         const [result] = await connection.query(sql, [id]);
         if (result.affectedRows === 0) {
             return StatusCode.UNKNOWN("Phone number deletion failed");
@@ -85,5 +161,6 @@ async function deletePhone(id) {
 export default {
     getAllPhone,
     createPhone,
-    deletePhone
+    deletePhone,
+    updatePhone
 }

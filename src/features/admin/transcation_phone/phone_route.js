@@ -4,10 +4,9 @@ import authJwt from "../../../middlewear/authJwt.js";
 
 const phoneRouter = Router();
 
-phoneRouter.use(authJwt.verifyAdmin);
-phoneRouter.post("/create", phoneController.createPhone);
-phoneRouter.post("/update", phoneController.updatePhone);
-phoneRouter.post("/delete", phoneController.deletePhone);
-phoneRouter.get("/get-all", phoneController.getAllPhone);
+phoneRouter.post("/create", authJwt.verifyAdmin, phoneController.createPhone);
+phoneRouter.post("/update/:id", authJwt.verifyAdmin, phoneController.updatePhone);
+phoneRouter.post("/delete/:id", authJwt.verifyAdmin, phoneController.deletePhone);
+phoneRouter.get("/get-all", authJwt.verifyAdmin, phoneController.getAllPhone);
 
 export default phoneRouter;

@@ -2,9 +2,10 @@ import phoneService from "./phone_service.js";
 import StatusCode from "../../../helper/statusCode.js";
 
 async function createPhone(req, res) {
+    console.log("req.body", req.body);
     try {
-        const { phone_number, account_name, type } = req.body;
-        const serviceRes = await phoneService.createPhone(phone_number, account_name, type);
+        const { phone_numbers, acc_name, type } = req.body;
+        const serviceRes = await phoneService.createPhone(phone_numbers, acc_name, type);
         if (serviceRes.code === 200) {
             return res.status(200).json(StatusCode.OK("Phone number created successfully"));
         } else {
@@ -18,8 +19,9 @@ async function createPhone(req, res) {
 
 async function updatePhone(req, res) {
     try {
-        const { id, phone_number, account_name, type } = req.body;
-        const serviceRes = await phoneService.updatePhone(id, phone_number, account_name, type);
+        const id = parseInt(req.params.id);
+        const { phone_numbers, acc_name, type } = req.body;
+        const serviceRes = await phoneService.updatePhone(id, phone_numbers, acc_name, type);
         if (serviceRes.code === 200) {
             return res.status(200).json(StatusCode.OK("Phone number updated successfully"));
         } else {
@@ -33,7 +35,7 @@ async function updatePhone(req, res) {
 
 async function deletePhone(req, res) {
     try {
-        const { id } = req.body;
+        const id = parseInt(req.params.id);
         if (!id || typeof id !== "number") {
             return res.status(400).json(StatusCode.INVALID_ARGUMENT("Missing phone number id"));
         }

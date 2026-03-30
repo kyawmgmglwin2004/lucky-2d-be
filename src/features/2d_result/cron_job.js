@@ -2,13 +2,12 @@ import cron from "node-cron";
 import fetch from "node-fetch";
 import AutoPayoutService from "./two_d_result_service.js";
 
-
 async function getResultFromAPI() {
     try {
         const res = await fetch("https://api.thaistock2d.com/live");
         const data = await res.json();
 
-        console.log("API Data:", data);
+        console.log("📡 API Data fetched");
 
         return data.result;
     } catch (err) {
@@ -17,65 +16,66 @@ async function getResultFromAPI() {
     }
 }
 
-
-function getSessionAndDate() {
-    const now = new Date().toLocaleString("en-US", {
-        timeZone: "Asia/Yangon"
-    });
-
-    const dateObj = new Date(now);
-
-    const hours = dateObj.getHours();
-    const minutes = dateObj.getMinutes();
-
-    const currentDate = dateObj.toISOString().slice(0, 10);
-
-    let session = "morning";
-
-    const currentTime = hours * 60 + minutes;
-    const morningCutoff = 10 * 60 + 30;
-
-    if (currentTime >= morningCutoff) {
-        session = "evening";
-    }
-
-    return { session, currentDate };
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
-
 
 function extractWinningNumber(results, session) {
     const targetTime = session === "morning"
         ? "12:01:00"
         : "16:30:00";
 
+    console.log("🔍 Checking Result...");
+    console.log("📌 Session:", session);
+    console.log("⏰ Target Time:", targetTime);
+
     const result = results.find(
         r => r.open_time === targetTime && r.twod !== "--"
     );
 
-    console.log("🔍 Checking Result...");
-    console.log("Session:", session);
-    console.log("Target Time:", targetTime);
-
     return result ? result.twod : null;
 }
 
+function getCurrentDate() {
+    const now = new Date().toLocaleString("en-US", {
+        timeZone: "Asia/Yangon"
+    });
 
-async function runAutoPayoutCron() {
+    return new Date(now).toISOString().slice(0, 10);
+}
+
+async function runAutoPayoutCron(session) {
     try {
         console.log("⏳ Running auto payout cron...");
 
-        const results = await getResultFromAPI();
-        if (!results) {
-            console.log(" No API data");
-            return;
+        const currentDate = getCurrentDate();
+
+        let winningNumber = null;
+        let attempts = 0;
+
+        const maxAttempts = 6;
+        const delay = 20000;
+
+        while (!winningNumber && attempts < maxAttempts) {
+            console.log(`🔁 Attempt ${attempts + 1}/${maxAttempts}`);
+
+            const results = await getResultFromAPI();
+            if (!results) return;
+
+            winningNumber = extractWinningNumber(results, session);
+
+            if (winningNumber) break;
+
+            console.log("⌛ Result not ready, retrying...");
+            attempts++;
+
+            if (attempts < maxAttempts) {
+                await sleep(delay);
+            }
         }
 
-        const { session, currentDate } = getSessionAndDate();
-
-        const winningNumber = extractWinningNumber(results, session);
-
         if (!winningNumber) {
-            console.log("⌛ Result not ready yet...");
+            console.log("Result not available after retries");
             return;
         }
 
@@ -87,33 +87,33 @@ async function runAutoPayoutCron() {
             currentDate
         );
 
-        console.log("✅ Payout Response:", payoutResult);
+        console.log("Payout Response:", payoutResult);
 
     } catch (err) {
-        console.error("❌ Cron job error:", err);
+        console.error("Cron job error:", err);
     }
 }
+
 cron.schedule(
-    "1 12 * * 1-5",
+    "2 12 * * 1-5",
     async () => {
-        console.log("🕛 12:01 PM Cron Triggered");
-        await runAutoPayoutCron();
+        console.log("12:01 PM Cron Triggered");
+        await runAutoPayoutCron("morning");
     },
     {
         timezone: "Asia/Yangon"
     }
 );
 
-
 cron.schedule(
-    "31 16 * * 1-5",
+    "32 16 * * 1-5",
     async () => {
-        console.log("🕟 4:31 PM Cron Triggered");
-        await runAutoPayoutCron();
+        console.log("4:30 PM Cron Triggered");
+        await runAutoPayoutCron("evening");
     },
     {
         timezone: "Asia/Yangon"
     }
 );
 
-console.log("Auto payout cron started (Mon–Fri | 12:01 PM & 4:31 PM)");
+console.log("Auto payout cron started (Mon–Fri | 12:01 PM & 4:30 PM)");

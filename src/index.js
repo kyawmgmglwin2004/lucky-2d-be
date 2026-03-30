@@ -3,7 +3,7 @@ import { config } from "./configs/config.js";
 import router from "./router.js";
 import cors from "cors"
 import cookieParser from "cookie-parser";
-// import "./features/2d_result/cron_job.js";
+import "./features/2d_result/cron_job.js";
 
 
 const app = express();
@@ -17,7 +17,9 @@ app.use(cors({
 
 
 app.use(cookieParser());
-app.use(express.json());
+// app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
 app.use('/uploads', express.static('uploads'));
 

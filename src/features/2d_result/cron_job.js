@@ -2,11 +2,13 @@ import cron from "node-cron";
 import fetch from "node-fetch";
 import AutoPayoutService from "./two_d_result_service.js";
 
+
 async function getResultFromAPI() {
     try {
         const res = await fetch("https://api.thaistock2d.com/live");
         const data = await res.json();
-        console.log("Data : ", data);
+
+        console.log("API Data:", data);
 
         return data.result;
     } catch (err) {
@@ -14,6 +16,7 @@ async function getResultFromAPI() {
         return null;
     }
 }
+
 
 function getSessionAndDate() {
     const now = new Date().toLocaleString("en-US", {
@@ -39,17 +42,23 @@ function getSessionAndDate() {
     return { session, currentDate };
 }
 
+
 function extractWinningNumber(results, session) {
-    let targetTime = session === "morning" ? "12:01:00" : "16:30:00";
+    const targetTime = session === "morning"
+        ? "12:01:00"
+        : "16:30:00";
 
-    const result = results.find(r => r.open_time === targetTime && r.twod !== "--");
+    const result = results.find(
+        r => r.open_time === targetTime && r.twod !== "--"
+    );
 
-    console.log("Result : ", result);
+    console.log("🔍 Checking Result...");
     console.log("Session:", session);
     console.log("Target Time:", targetTime);
-    console.log("Results:", results);
+
     return result ? result.twod : null;
 }
+
 
 async function runAutoPayoutCron() {
     try {
@@ -57,7 +66,7 @@ async function runAutoPayoutCron() {
 
         const results = await getResultFromAPI();
         if (!results) {
-            console.log("⚠️ No API data");
+            console.log(" No API data");
             return;
         }
 
@@ -72,21 +81,39 @@ async function runAutoPayoutCron() {
 
         console.log(`🎯 Result detected → ${winningNumber} (${session})`);
 
-        const result = await AutoPayoutService.runAutoPayoutService(
+        const payoutResult = await AutoPayoutService.runAutoPayoutService(
             winningNumber,
             session,
             currentDate
         );
 
-        console.log("✅ Payout Response:", result);
+        console.log("✅ Payout Response:", payoutResult);
 
     } catch (err) {
         console.error("❌ Cron job error:", err);
     }
 }
+cron.schedule(
+    "1 12 * * 1-5",
+    async () => {
+        console.log("🕛 12:01 PM Cron Triggered");
+        await runAutoPayoutCron();
+    },
+    {
+        timezone: "Asia/Yangon"
+    }
+);
 
-cron.schedule("*/1 * * * *", async () => {
-    await runAutoPayoutCron();
-});
 
-console.log("🚀 Auto payout cron started...");
+cron.schedule(
+    "31 16 * * 1-5",
+    async () => {
+        console.log("🕟 4:31 PM Cron Triggered");
+        await runAutoPayoutCron();
+    },
+    {
+        timezone: "Asia/Yangon"
+    }
+);
+
+console.log("Auto payout cron started (Mon–Fri | 12:01 PM & 4:31 PM)");

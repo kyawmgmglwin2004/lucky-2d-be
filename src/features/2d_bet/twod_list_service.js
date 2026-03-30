@@ -207,7 +207,7 @@ async function betTwoDListByUserId(userId) {
     let connection;
 
     try {
-        if (!userId || typeof userId !== "number") {
+        if (!userId) {
             return StatusCode.INVALID_ARGUMENT("Invalid or missing userId");
         }
 

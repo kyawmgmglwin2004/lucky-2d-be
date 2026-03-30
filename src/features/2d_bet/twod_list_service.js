@@ -203,23 +203,40 @@ async function betTwoD(user_id, bets, type) {
     }
 }
 
-
 async function betTwoDListByUserId(userId) {
     let connection;
+
     try {
-        if (!userId) {
-            return StatusCode.INVALID_ARGUMENT("missing userId for get 2d bet list");
+        if (!userId || typeof userId !== "number") {
+            return StatusCode.INVALID_ARGUMENT("Invalid or missing userId");
         }
 
         connection = await Mysql.getConnection();
-        const sql = `SELECT * FROM bets WHERE user_id = ? ORDER BY id DESC`;
 
-        const [result] = await connection.query(sql, userId);
+        const sql = `
+            SELECT 
+                id,
+                user_id,
+                batch_id,
+                number,
+                type,
+                amount,
+                DATE_FORMAT(bet_date, '%Y-%m-%d') AS bet_date,
+                session,
+                is_paid
+            FROM bets 
+            WHERE user_id = ? 
+            ORDER BY id DESC
+        `;
 
-        if (result.affectedRows === 0) {
+        const [result] = await connection.query(sql, [userId]);
+
+        if (result.length === 0) {
             return StatusCode.NOT_FOUND("2d bets list not found for this user");
         }
-        return StatusCode.OK("2d bet histroy", result);
+
+        return StatusCode.OK("2d bet history", result);
+
     } catch (error) {
         console.error("Error get 2d bet history:", error);
         return StatusCode.UNKNOWN("Database error");

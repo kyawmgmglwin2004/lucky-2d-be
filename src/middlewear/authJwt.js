@@ -49,7 +49,7 @@ function signUserAccessToken(user) {
   };
 
   const signOptions = {
-    expiresIn: "1m",
+    expiresIn: "10m",
   };
 
   return jwt.sign(payload, User_SECRET, signOptions);

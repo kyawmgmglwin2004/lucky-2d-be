@@ -203,7 +203,49 @@ async function betTwoD(user_id, bets, type) {
     }
 }
 
-async function betTwoDListByUserId(userId) {
+// async function betTwoDListByUserId(userId) {
+//     let connection;
+
+//     try {
+//         if (!userId) {
+//             return StatusCode.INVALID_ARGUMENT("Invalid or missing userId");
+//         }
+
+//         connection = await Mysql.getConnection();
+
+//         const sql = `
+//             SELECT 
+//                 id,
+//                 user_id,
+//                 batch_id,
+//                 number,
+//                 type,
+//                 amount,
+//                 DATE_FORMAT(bet_date, '%Y-%m-%d') AS bet_date,
+//                 session,
+//                 is_paid
+//             FROM bets 
+//             WHERE user_id = ? 
+//             ORDER BY id DESC
+//         `;
+
+//         const [result] = await connection.query(sql, [userId]);
+
+//         if (result.length === 0) {
+//             return StatusCode.NOT_FOUND("2d bets list not found for this user");
+//         }
+
+//         return StatusCode.OK("2d bet history", result);
+
+//     } catch (error) {
+//         console.error("Error get 2d bet history:", error);
+//         return StatusCode.UNKNOWN("Database error");
+//     } finally {
+//         if (connection) connection.release();
+//     }
+// }
+
+async function betTwoDListByUserId(userId, page = 1, limit = 10, filterDate = null) {
     let connection;
 
     try {
@@ -211,7 +253,27 @@ async function betTwoDListByUserId(userId) {
             return StatusCode.INVALID_ARGUMENT("Invalid or missing userId");
         }
 
+        const currentPage = parseInt(page) > 0 ? parseInt(page) : 1;
+        const itemsPerPage = parseInt(limit) > 0 ? parseInt(limit) : 10;
+        const offset = (currentPage - 1) * itemsPerPage;
+
         connection = await Mysql.getConnection();
+
+        
+        let whereConditions = ['user_id = ?'];
+        let queryParams = [userId];
+
+        if (filterDate) {
+            whereConditions.push('DATE(bet_date) = ?');
+            queryParams.push(filterDate);
+        }
+
+        const whereClause = whereConditions.join(' AND ');
+
+        const countSql = `SELECT COUNT(*) as total FROM bets WHERE ${whereClause}`;
+        const [countResult] = await connection.query(countSql, queryParams);
+        const totalRecords = countResult[0].total;
+        const totalPages = Math.ceil(totalRecords / itemsPerPage);
 
         const sql = `
             SELECT 
@@ -225,17 +287,31 @@ async function betTwoDListByUserId(userId) {
                 session,
                 is_paid
             FROM bets 
-            WHERE user_id = ? 
+            WHERE ${whereClause}
             ORDER BY id DESC
+            LIMIT ? OFFSET ?
         `;
 
-        const [result] = await connection.query(sql, [userId]);
+        queryParams.push(itemsPerPage, offset);
+
+        const [result] = await connection.query(sql, queryParams);
 
         if (result.length === 0) {
             return StatusCode.NOT_FOUND("2d bets list not found for this user");
         }
 
-        return StatusCode.OK("2d bet history", result);
+        const responseData = {
+            data: result,
+            pagination: {
+                currentPage: currentPage,
+                totalPages: totalPages,
+                totalRecords: totalRecords,
+                itemsPerPage: itemsPerPage,
+                filterDate: filterDate || "All"
+            }
+        };
+
+        return StatusCode.OK("2d bet history", responseData);
 
     } catch (error) {
         console.error("Error get 2d bet history:", error);

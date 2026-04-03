@@ -42,7 +42,7 @@ async function createPhone(phone_numbers, acc_name, type) {
             return StatusCode.INVALID_ARGUMENT("Type already exists");
         }
 
-        const sql = `INSERT INTO transaction_phones (phone_numbers, acc_name, type) VALUES (?, ?, ?)`;
+        const sql = `INSERT INTO transaction_phones (phone_numbers, acc_name, type , created_at) VALUES (?, ?, ?, NOW())`;
         connection = await Mysql.getConnection();
         const [result] = await connection.query(sql, [phone_numbers, acc_name, type]);
         if (result.affectedRows === 0) {
@@ -86,6 +86,8 @@ async function updatePhone(id, phone_numbers, acc_name, type) {
         if (fields.length === 0) {
             return StatusCode.INVALID_ARGUMENT("No fields to update");
         }
+
+        fields.push("updated_at = NOW()");
 
         connection = await Mysql.getConnection();
 

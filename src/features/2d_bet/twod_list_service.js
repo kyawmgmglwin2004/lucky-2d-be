@@ -75,36 +75,32 @@ async function createNewNumbersList(category_key, numbers) {
     }
 }
 
-async function betTwoD(user_id, bets, type) {
+async function betTwoD(user_id, bets, type, session) {
     console.log(user_id, bets, type);
     let connection;
     try {
 
-        if (!user_id || !type || !bets || bets.length === 0) {
-            return StatusCode.INVALID_ARGUMENT("Invalid arguments or no numbers selected");
+        if (!user_id || !type || !bets || bets.length === 0 || !session || typeof session !== "string") {
+            return StatusCode.INVALID_ARGUMENT("Invalid arguments or no numbers selected or bet session");
         }
-
-        function getSession() {
-            const now = new Date().toLocaleString("en-US", {
-                timeZone: "Asia/Yangon"
-            });
-
-            const date = new Date(now);
-
-            const currentTime = date.getHours() * 60 + date.getMinutes();
-
-            const morningEnd = 12 * 60;
-
-            return currentTime < morningEnd ? "morning" : "evening";
-        }
-
-        const session = getSession();
-
         const seenNumbers = new Set();
         let totalBetAmount = 0;
 
         for (const item of bets) {
             const numStr = String(item.number);
+            const amount = Number(item.amount);
+
+            if (isNaN(amount)) {
+                return StatusCode.INVALID_ARGUMENT(`Invalid amount for number ${item.number}`);
+            }
+
+            if (amount <= 0) {
+                return StatusCode.INVALID_ARGUMENT(`ထိုးငွေသည် 0 ထက်ကြီးရပါမည် (Number: ${item.number})`);
+            }
+            if (!Number.isInteger(amount)) {
+                return StatusCode.INVALID_ARGUMENT(`Amount must be integer (Number: ${item.number})`);
+            }
+
 
             if (seenNumbers.has(numStr)) {
                 return StatusCode.INVALID_ARGUMENT(`Duplicate number found: ${item.number}. Please remove duplicates.`);
@@ -126,7 +122,7 @@ async function betTwoD(user_id, bets, type) {
         const currentBalance = walletRows[0].balance;
 
         if (totalBetAmount > currentBalance) {
-            return StatusCode.INVALID_ARGUMENT(`Insufficient balance. You need ${totalBetAmount}, but you have ${currentBalance}.`);
+            return StatusCode.INVALID_ARGUMENT(`လက်ကျန်ငွေ မလုံလောက်ပါ`);
         }
 
         await connection.beginTransaction();
@@ -203,48 +199,6 @@ async function betTwoD(user_id, bets, type) {
     }
 }
 
-// async function betTwoDListByUserId(userId) {
-//     let connection;
-
-//     try {
-//         if (!userId) {
-//             return StatusCode.INVALID_ARGUMENT("Invalid or missing userId");
-//         }
-
-//         connection = await Mysql.getConnection();
-
-//         const sql = `
-//             SELECT 
-//                 id,
-//                 user_id,
-//                 batch_id,
-//                 number,
-//                 type,
-//                 amount,
-//                 DATE_FORMAT(bet_date, '%Y-%m-%d') AS bet_date,
-//                 session,
-//                 is_paid
-//             FROM bets 
-//             WHERE user_id = ? 
-//             ORDER BY id DESC
-//         `;
-
-//         const [result] = await connection.query(sql, [userId]);
-
-//         if (result.length === 0) {
-//             return StatusCode.NOT_FOUND("2d bets list not found for this user");
-//         }
-
-//         return StatusCode.OK("2d bet history", result);
-
-//     } catch (error) {
-//         console.error("Error get 2d bet history:", error);
-//         return StatusCode.UNKNOWN("Database error");
-//     } finally {
-//         if (connection) connection.release();
-//     }
-// }
-
 async function betTwoDListByUserId(userId, page = 1, limit = 10, filterDate = null) {
     let connection;
 
@@ -259,7 +213,7 @@ async function betTwoDListByUserId(userId, page = 1, limit = 10, filterDate = nu
 
         connection = await Mysql.getConnection();
 
-        
+
         let whereConditions = ['user_id = ?'];
         let queryParams = [userId];
 

@@ -8,5 +8,6 @@ userRouter.post("/login", userController.userLogin);
 userRouter.post("/register", userController.userRegister);
 userRouter.get("/me", authJwt.verifyAnyToken, userController.getUserById);
 userRouter.post("/refresh-token", userController.userRefreshToken);
+userRouter.get("/get-balance", authJwt.verifyAnyToken, userController.getBalance);
 
 export default userRouter;

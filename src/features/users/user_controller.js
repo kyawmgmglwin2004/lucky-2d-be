@@ -113,9 +113,25 @@ async function getUserById(req, res) {
     }
 }
 
+async function getBalance(req, res) {
+    try {
+        const userId = req.user.id;
+        if (!userId) {
+            return res.status(400).json(StatusCodes.INVALID_ARGUMENT("User ID is required"));
+        }
+        const serviceRes = await userService.getBalance(userId);
+        return res.status(serviceRes.code).json(serviceRes);
+    } catch (error) {
+        console.error("Error fetching balance:", error);
+        return res.status(500).json(StatusCodes.UNKNOWN("SERVER ERROR"));
+    }
+}
+
+
 export default {
     userLogin,
     userRegister,
     getUserById,
-    userRefreshToken
+    userRefreshToken,
+    getBalance
 }

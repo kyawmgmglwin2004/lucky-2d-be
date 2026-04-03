@@ -172,11 +172,35 @@ async function getUserById(userId) {
   }
 }
 
+async function getBalance(userId) {
+  let connection;
+  try {
+    if (!userId || typeof userId !== "number") {
+      return StatusCode.INVALID_ARGUMENT("Invalid user ID");
+    }
+
+    const sql = `SELECT balance FROM wallets WHERE user_id = ?`;
+    connection = await Mysql.getConnection();
+    const [rows] = await connection.query(sql, [userId]);
+    if (rows.length === 0) {
+      return StatusCode.NOT_FOUND("User not found");
+    }
+    const balance = rows[0].balance;
+    return StatusCode.OK("Balance retrieved successfully", balance);
+  } catch (error) {
+    console.error("Error fetching balance:", error);
+    return StatusCode.UNKNOWN("Database error");
+  } finally {
+    if (connection) connection.release();
+  }
+}
+
 
 export default {
   userLogin,
   userRegister,
   getUserById,
   saveRefreshToken,
-  findUserByRefreshToken
+  findUserByRefreshToken,
+  getBalance
 }

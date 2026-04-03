@@ -1,13 +1,13 @@
 import twodListService from "./twod_list_service.js";
 import StatusCode from "../../helper/statusCode.js";
 
-async function twoDList(req , res) {
+async function twoDList(req, res) {
     console.log("reach=======")
     try {
         console.log("reach=======၁၁၁၁၁၁၁")
-         const { category_key,  page = 1, limit = 100 } = req.query;
+        const { category_key, page = 1, limit = 100 } = req.query;
 
-        if( !category_key || typeof category_key !== "string") {
+        if (!category_key || typeof category_key !== "string") {
             return res.status(400).json(StatusCode.INVALID_ARGUMENT("require category_key for get 2D number"));
         }
 
@@ -23,17 +23,17 @@ async function twoDList(req , res) {
 }
 
 async function createNewNumbersList(req, res) {
-    try {   
-        const { category_key, numbers } =  req.body;
-        if(!category_key || typeof category_key !== "string" || !numbers || typeof numbers !== "object") {
-        return StatusCode.INVALID_ARGUMENT("require category_key and numbers list for create new number list");
+    try {
+        const { category_key, numbers } = req.body;
+        if (!category_key || typeof category_key !== "string" || !numbers || typeof numbers !== "object") {
+            return StatusCode.INVALID_ARGUMENT("require category_key and numbers list for create new number list");
         }
 
         const serviceRes = await twodListService.createNewNumbersList(category_key, numbers);
-        
+
         return res.status(serviceRes.code).json(serviceRes);
     } catch (error) {
-         console.error("2d new create category", error);
+        console.error("2d new create category", error);
 
         return res.status(500).json(StatusCode.UNKNOWN("SERVER ERROR"));
 
@@ -42,9 +42,9 @@ async function createNewNumbersList(req, res) {
 
 async function betTwoD(req, res) {
     try {
-        const {user_id ,  bets} = req.body;
+        const { user_id, bets, session } = req.body;
         const type = "2d"
-        const serviceRes = await twodListService.betTwoD(user_id,bets , type  );
+        const serviceRes = await twodListService.betTwoD(user_id, bets, type, session);
 
         return res.status(serviceRes.code).json(serviceRes);
     } catch (error) {
@@ -56,13 +56,13 @@ async function betTwoD(req, res) {
 
 async function betTwoDListByUserId(req, res) {
     try {
-        const {userId}= req.params;
+        const { userId } = req.params;
         const { page = 1, limit = 10, filterdate = null } = req.query;
         console.log("=====userId", userId)
         console.log("=====page", page)
         console.log("=====limit", limit)
         console.log("=====filterdate", filterdate)
-        const serviceRes = await twodListService.betTwoDListByUserId(userId, page, limit ,filterdate);
+        const serviceRes = await twodListService.betTwoDListByUserId(userId, page, limit, filterdate);
         return res.status(serviceRes.code).json(serviceRes);
     } catch (error) {
         console.error("2d bet history by userId :", error);

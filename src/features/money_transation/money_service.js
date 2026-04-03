@@ -141,7 +141,7 @@ async function withdrawRequest(userId, password, amount, transactionType, paymen
         const isPasswordValid = await bcrypt.compare(password, storedHashedPassword);
 
         if (!isPasswordValid) {
-            return StatusCode.PERMISSION_DENIED("Incorrect password");
+            return StatusCode.PERMISSION_DENIED("Password မှားနေပါတယ်");
         }
 
         const amountSql = 'SELECT balance FROM wallets WHERE user_id = ?';
@@ -156,6 +156,25 @@ async function withdrawRequest(userId, password, amount, transactionType, paymen
 
         if (currentBalance < amount) {
             return StatusCode.INVALID_ARGUMENT("Insufficient balance");
+        }
+
+        const pendingSql = `
+            SELECT SUM(amount) as total_pending 
+            FROM money_transactions 
+            WHERE user_id = ? 
+            AND status = 'pending' AND transaction_type = 'withdraw'
+        `;
+        const [pendingRows] = await connection.query(pendingSql, [userId]);
+
+        const totalPending = Number(pendingRows[0].total_pending) || 0;
+        const numericAmount = Number(amount);
+        const numericBalance = Number(currentBalance);
+        // 2. Check if (pending + new amount) > balance
+        console.log(typeof totalPending, totalPending);
+        console.log(typeof amount, amount);
+        console.log(typeof currentBalance, currentBalance);
+        if ((totalPending + numericAmount) > numericBalance) {
+            return StatusCode.INVALID_ARGUMENT("လက်ရှိငွေထုတ်ရန်မလုံလောက်ပါ");
         }
 
         const sql = `INSERT INTO money_transactions (user_id, amount, transaction_type, payment_method, status, bank_account_name, bank_account_number, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`;

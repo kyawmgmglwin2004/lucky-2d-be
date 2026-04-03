@@ -7,7 +7,7 @@ async function getAllRequests(transactionType, status) {
     if (!transactionType) {
       return StatusCode.INVALID_ARGUMENT("transactionType is required");
     }
-   
+
     let sql = `
       SELECT mt.*, u.name AS user_name
       FROM money_transactions mt
@@ -41,90 +41,84 @@ async function getAllRequests(transactionType, status) {
   }
 }
 
-
 async function comfrimRequest(id, status, transactionType) {
-    let connection;
-    try {
-       if (!id || isNaN(id) || typeof id !== 'number' || !status || typeof status !== 'string' || !transactionType || typeof transactionType !== 'string') {
-            return StatusCode.INVALID_ARGUMENT("Invalid top-up request ID or status");
-        }
-
-        connection = await Mysql.getConnection();
-        await connection.beginTransaction();
-
-        const sql = `SELECT * FROM money_transactions WHERE id = ? FOR UPDATE`; 
-        const [result] = await connection.query(sql, [id]);
-
-        if (result.length == 0) {
-            throw new Error("Transaction not found");
-        }
-
-        const transaction = result[0];
-        const amount = transaction.amount;
-        const userId = transaction.user_id;
-
-        const sql1 = `UPDATE money_transactions SET status = ? WHERE id = ?`;
-        await connection.query(sql1, [status, id]);
-
-        const sql2 = `UPDATE wallets SET balance = balance + ? WHERE user_id = ? AND (balance + ?) >= 0`;
-        
-        if (status.toLowerCase() === 'approved') {
-            let finalAmount = amount;
-
-            if (transactionType.toLowerCase() === 'withdraw') {
-                finalAmount = -amount;
-            }
-
-            const [walletResult] = await connection.query(sql2, [finalAmount, userId, finalAmount]);
-
-            if (walletResult.affectedRows === 0) {
-                throw new Error("Insufficient balance or wallet not found");
-            }
-        }
-
-        await connection.commit();
-        return StatusCode.OK("Transaction successful");
-
-    } catch (error) {
-        if (connection) await connection.rollback();
-        console.error(error);
-        return StatusCode.UNKNOWN(error.message);
-    } finally {
-        if (connection) connection.release();
+  let connection;
+  try {
+    if (!id || isNaN(id) || typeof id !== 'number' || !status || typeof status !== 'string' || !transactionType || typeof transactionType !== 'string') {
+      return StatusCode.INVALID_ARGUMENT("Invalid top-up request ID or status");
     }
+
+    connection = await Mysql.getConnection();
+    await connection.beginTransaction();
+
+    const sql = `SELECT * FROM money_transactions WHERE id = ? FOR UPDATE`;
+    const [result] = await connection.query(sql, [id]);
+
+    if (result.length == 0) {
+      throw new Error("Transaction not found");
+    }
+
+    const transaction = result[0];
+    const amount = transaction.amount;
+    const userId = transaction.user_id;
+
+    const sql1 = `UPDATE money_transactions SET status = ? WHERE id = ?`;
+    await connection.query(sql1, [status, id]);
+
+    const sql2 = `UPDATE wallets SET balance = balance + ? WHERE user_id = ? AND (balance + ?) >= 0`;
+
+    if (status.toLowerCase() === 'approved') {
+      let finalAmount = amount;
+
+      if (transactionType.toLowerCase() === 'withdraw') {
+        finalAmount = -amount;
+      }
+
+      const [walletResult] = await connection.query(sql2, [finalAmount, userId, finalAmount]);
+
+      if (walletResult.affectedRows === 0) {
+        throw new Error("Insufficient balance or wallet not found");
+      }
+    }
+
+    await connection.commit();
+    return StatusCode.OK("Transaction successful");
+
+  } catch (error) {
+    if (connection) await connection.rollback();
+    console.error(error);
+    return StatusCode.UNKNOWN(error.message);
+  } finally {
+    if (connection) connection.release();
+  }
 }
-
-
-
 
 async function updateTopupRequestStatus(id, status) {
-    let connection;
-    try {
-        if (!id || isNaN(id) || typeof id !== 'number' || !status || typeof status !== 'string') {
-            return StatusCode.INVALID_ARGUMENT("Invalid top-up request ID or status");
-        }
-        const sql = `UPDATE money_transactions SET status = ? WHERE id = ? AND transaction_type = 'topup'`;
-        connection = await Mysql.getConnection();
-        const [result] = await connection.query(sql, [status, id]);
-
-        if (result.affectedRows === 0) {
-            return StatusCode.NOT_FOUND("Top-up request not found or status unchanged");
-        }
-
-        return StatusCode.OK("Top-up request status updated successfully");
-       
-    } catch (error) {
-        console.error("Error updating top-up request status:", error);
-        return StatusCode.UNKNOWN("Database error");
-    } finally {
-        if (connection) connection.release();
+  let connection;
+  try {
+    if (!id || isNaN(id) || typeof id !== 'number' || !status || typeof status !== 'string') {
+      return StatusCode.INVALID_ARGUMENT("Invalid top-up request ID or status");
     }
+    const sql = `UPDATE money_transactions SET status = ? WHERE id = ? AND transaction_type = 'topup'`;
+    connection = await Mysql.getConnection();
+    const [result] = await connection.query(sql, [status, id]);
+
+    if (result.affectedRows === 0) {
+      return StatusCode.NOT_FOUND("Top-up request not found or status unchanged");
+    }
+
+    return StatusCode.OK("Top-up request status updated successfully");
+
+  } catch (error) {
+    console.error("Error updating top-up request status:", error);
+    return StatusCode.UNKNOWN("Database error");
+  } finally {
+    if (connection) connection.release();
+  }
 }
 
-
-
 export default {
-    getAllRequests,
-    comfrimRequest,
-    updateTopupRequestStatus
+  getAllRequests,
+  comfrimRequest,
+  updateTopupRequestStatus
 }

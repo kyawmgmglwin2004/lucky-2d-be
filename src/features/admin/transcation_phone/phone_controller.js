@@ -40,11 +40,8 @@ async function deletePhone(req, res) {
             return res.status(400).json(StatusCode.INVALID_ARGUMENT("Missing phone number id"));
         }
         const serviceRes = await phoneService.deletePhone(id);
-        if (serviceRes.code === 200) {
-            return res.status(200).json(StatusCode.OK("Phone number deleted successfully"));
-        } else {
-            return res.status(serviceRes.code).json(serviceRes);
-        }
+
+        return res.status(serviceRes.code).json(serviceRes);
     } catch (error) {
         console.error("Error deleting phone number:", error);
         return res.status(500).json(StatusCode.UNKNOWN("SERVER ERROR"));

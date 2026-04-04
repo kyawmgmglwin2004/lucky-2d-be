@@ -8,13 +8,12 @@ import twoDListRouter from "./features/2d_bet/twod_list_route.js";
 import adminTwoDRouter from "./features/admin/2d/two_d_route.js";
 import setAdminRouter from "./features/admin/set_admin/set_admin_route.js";
 import phoneRouter from "./features/admin/transcation_phone/phone_route.js";
+import imageRouter from "./features/admin/slide_images/image_route.js";
 
 
 const router = Router();
 
-// router.use("/", books);
 
-// router.use("/orders", mail);
 
 router.use("/user", user);
 router.use("/money", moneyRouter);
@@ -25,7 +24,7 @@ router.use("/admin/two-d", adminTwoDRouter)
 router.use("/twod", twoDListRouter);
 router.use("/set-admin", setAdminRouter);
 router.use("/admin/phone", phoneRouter);
+router.use("/admin/image", imageRouter);
 
-// router.use("/orderList", order)
 
 export default router;

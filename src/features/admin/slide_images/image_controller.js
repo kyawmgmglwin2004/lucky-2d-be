@@ -35,7 +35,8 @@ async function createImage(req, res) {
 
 async function updateImage(req, res) {
     try {
-        const { id, image_url } = req.body;
+        const { id } = req.params;
+        const image_url = req.file ? `/uploads/${req.file.filename}` : null;
         const serviceRes = await imageService.updateImage(id, image_url);
         if (serviceRes.code === 200) {
             return res.status(200).json(StatusCode.OK("Image updated successfully"));
@@ -50,7 +51,7 @@ async function updateImage(req, res) {
 
 async function deleteImage(req, res) {
     try {
-        const { id } = req.body;
+        const { id } = req.params;
         const serviceRes = await imageService.deleteImage(id);
         if (serviceRes.code === 200) {
             return res.status(200).json(StatusCode.OK("Image deleted successfully"));

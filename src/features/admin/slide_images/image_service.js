@@ -1,5 +1,7 @@
 import Mysql from "../../../helper/db.js";
 import StatusCode from "../../../helper/statusCode.js";
+import fs from "fs";
+import path from "path";
 
 async function getAllImages() {
     let connection;
@@ -40,14 +42,40 @@ async function createImage(image_url) {
         }
     }
 }
-
 async function updateImage(id, image_url) {
     let connection;
     try {
-        const sql = `UPDATE slide_images SET images = ? WHERE id = ?`;
         connection = await Mysql.getConnection();
-        const [rows] = await connection.query(sql, [image_url, id]);
-        return StatusCode.OK("Image updated successfully", rows);
+
+        const [rows] = await connection.query(
+            "SELECT images FROM slide_images WHERE id = ?",
+            [id]
+        );
+
+        if (rows.length === 0) {
+            return StatusCode.NOT_FOUND("Image not found");
+        }
+
+        const oldImage = rows[0].images;
+
+        if (oldImage) {
+            const fullPath = path.join(process.cwd(), oldImage);
+
+            if (fs.existsSync(fullPath)) {
+                fs.unlink(fullPath, (err) => {
+                    if (err) {
+                        console.error("Error deleting old image:", err);
+                    }
+                });
+            }
+        }
+
+        const [result] = await connection.query(
+            "UPDATE slide_images SET images = ? WHERE id = ?",
+            [image_url, id]
+        );
+
+        return StatusCode.OK("Image updated successfully", result);
     } catch (error) {
         console.error("Error updating image:", error);
         return StatusCode.UNKNOWN("SERVER ERROR");
@@ -60,11 +88,34 @@ async function updateImage(id, image_url) {
 
 async function deleteImage(id) {
     let connection;
+    console.log("ID : ", id);
     try {
-        const sql = `DELETE FROM slide_images WHERE id = ?`;
         connection = await Mysql.getConnection();
-        const [rows] = await connection.query(sql, [id]);
-        return StatusCode.OK("Image deleted successfully", rows);
+
+        const [rows] = await connection.query(
+            "SELECT images FROM slide_images WHERE id = ?",
+            [id]
+        );
+
+        if (rows.length === 0) {
+            return StatusCode.NOT_FOUND("Image not found");
+        }
+
+        const imagePath = rows[0].images;
+        if (imagePath) {
+            const fullPath = path.join(process.cwd(), imagePath);
+
+            if (fs.existsSync(fullPath)) {
+                fs.unlinkSync(fullPath);
+            }
+        }
+
+        await connection.query(
+            "DELETE FROM slide_images WHERE id = ?",
+            [id]
+        );
+
+        return StatusCode.OK("Image deleted successfully");
     } catch (error) {
         console.error("Error deleting image:", error);
         return StatusCode.UNKNOWN("SERVER ERROR");

@@ -26,7 +26,7 @@ app.use('/uploads', express.static('uploads'));
 app.use(express.urlencoded({ extended: true }));
 app.get("/", (req, res) => {
   console.log("Hello world")
-  res.json("This is testing ci cd runing......OKOKOK")
+  res.json("This is testing ci cd runing......OKOKOK...")
 })
 app.use("/api/v1", router);
 app.get("/test", (req, res) => {

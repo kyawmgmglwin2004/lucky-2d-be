@@ -9,6 +9,9 @@ import adminTwoDRouter from "./features/admin/2d/two_d_route.js";
 import setAdminRouter from "./features/admin/set_admin/set_admin_route.js";
 import phoneRouter from "./features/admin/transcation_phone/phone_route.js";
 import imageRouter from "./features/admin/slide_images/image_route.js";
+import threeDBetRouter from "./features/3d-bet/threed_bet_route.js";
+import adminThreeDRouter from "./features/admin/3d/three_d_route.js";
+
 
 
 const router = Router();
@@ -25,6 +28,8 @@ router.use("/twod", twoDListRouter);
 router.use("/set-admin", setAdminRouter);
 router.use("/admin/phone", phoneRouter);
 router.use("/admin/image", imageRouter);
+router.use("/threed", threeDBetRouter);
+router.use("/admin/three-d", adminThreeDRouter);
 
 
 export default router;

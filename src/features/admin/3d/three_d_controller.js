@@ -3,8 +3,8 @@ import StatusCode from "../../../helper/statusCode.js";
 
 async function updateAllNumberDetail(req, res) {
     try {
-        const { rate, status_limit_amount, real_limit_amount } = req.body;
-        const serviceRes = await twoDService.updateAllNumberDetails(rate, status_limit_amount, real_limit_amount);
+        const { rate, status_limit_amounts, real_limit_amounts } = req.body;
+        const serviceRes = await twoDService.updateAllNumberDetails(rate, status_limit_amounts, real_limit_amounts);
         return res.status(serviceRes.code).json(serviceRes);
     } catch (error) {
         console.error("3d update all numbers :", error);
@@ -17,8 +17,8 @@ async function updateAllNumberDetail(req, res) {
 async function updateNumberDetailById(req, res) {
     try {
         const id = req.params.id;
-        const { rate, status_limit_amount, real_limit_amount } = req.body;
-        const serviceRes = await twoDService.updateNumberDetailById(id, rate, status_limit_amount, real_limit_amount);
+        const { rate, status_limit_amounts, real_limit_amounts } = req.body;
+        const serviceRes = await twoDService.updateNumberDetailById(id, rate, status_limit_amounts, real_limit_amounts);
         return res.status(serviceRes.code).json(serviceRes);
     } catch (error) {
         console.error("3d update numbers by id :", error);

@@ -1,20 +1,20 @@
 import StatusCode from "../../../helper/statusCode.js";
 import Mysql from "../../../helper/db.js";
 
-async function updateAllNumberDetails(rate, status_limit_amount, realLimitAmount) {
+async function updateAllNumberDetails(rate, status_limit_amounts, real_limit_amounts) {
     let connection;
     try {
-        if (!rate || !status_limit_amount || !realLimitAmount) {
+        if (!rate || !status_limit_amounts || !real_limit_amounts) {
             return StatusCode.INVALID_ARGUMENT("Missing required fields");
         }
 
         const sql = `
             UPDATE three_d_lists 
-            SET rate = ?, status_limit_amount = ?, real_limit_amount = ?
+            SET rate = ?, status_limit_amounts = ?, real_limit_amounts = ?
         `;
 
         connection = await Mysql.getConnection();
-        const [result] = await connection.query(sql, [rate, status_limit_amount, realLimitAmount]);
+        const [result] = await connection.query(sql, [rate, status_limit_amounts, real_limit_amounts]);
 
         if (result.affectedRows === 0) {
             return StatusCode.UNKNOWN("set number detail error")
@@ -30,24 +30,24 @@ async function updateAllNumberDetails(rate, status_limit_amount, realLimitAmount
     }
 }
 
-async function updateNumberDetailById(id, rate, status_limit_amount, real_limit_limit) {
+async function updateNumberDetailById(id, rate, status_limit_amounts, real_limit_amounts) {
     let connection;
     try {
         if (!id) {
             return StatusCode.INVALID_ARGUMENT("ID is required");
         }
-        if (!rate || !status_limit_amount || !real_limit_limit) {
+        if (!rate || !status_limit_amounts || !real_limit_amounts) {
             return StatusCode.INVALID_ARGUMENT("Missing required fields (rate, limit)");
         }
 
         const sql = `
             UPDATE three_d_lists 
-            SET rate = ?, status_limit_amount = ?, real_limit_amount = ? 
+            SET rate = ?, status_limit_amounts = ?, real_limit_amounts = ? 
             WHERE id = ?
         `;
 
         connection = await Mysql.getConnection();
-        const [result] = await connection.query(sql, [rate, status_limit_amount, real_limit_limit, id]);
+        const [result] = await connection.query(sql, [rate, status_limit_amounts, real_limit_amounts, id]);
 
         if (result.affectedRows === 0) {
             return StatusCode.NOT_FOUND("Number detail not found with this ID");
@@ -77,7 +77,7 @@ async function getTotalAmontForEachNumber() {
 
         return StatusCode.OK("get all three d detail list", result);
     } catch (error) {
-        console.error("Error get     3 d detail:", error);
+        console.error("Error get 3 d detail:", error);
         return StatusCode.UNKNOWN("Database error");
     } finally {
         if (connection) connection.release();

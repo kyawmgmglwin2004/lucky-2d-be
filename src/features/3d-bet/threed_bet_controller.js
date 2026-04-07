@@ -42,8 +42,21 @@ async function getThreeDBetHistoryByUserId(req, res) {
     }
 }
 
+async function getWinnerList(req, res) {
+    try {
+        const { page, limit, filterdate } = req.query;
+        const type = "3d";
+        const serviceRes = await threedBetService.getWinnerList(page, limit, filterdate, type);
+        return res.status(serviceRes.code).json(serviceRes);
+    } catch (error) {
+        console.error("3d winner list :", error);
+        return res.status(500).json(StatusCode.UNKNOWN("SERVER ERROR"));
+    }
+}
+
 export default {
     betThreeD,
     threeDList,
-    getThreeDBetHistoryByUserId
+    getThreeDBetHistoryByUserId,
+    getWinnerList
 }

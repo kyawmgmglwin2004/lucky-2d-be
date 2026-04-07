@@ -8,5 +8,6 @@ twoDListRouter.get("/two-d-numbers-list", authJwt.verifyAnyToken, twoDListContro
 twoDListRouter.post("/create-new-category", authJwt.verifyAnyToken, twoDListController.createNewNumbersList);
 twoDListRouter.post("/bet-two-d", authJwt.verifyAnyToken, twoDListController.betTwoD);
 twoDListRouter.get("/bet-history/:userId", authJwt.verifyAnyToken, twoDListController.betTwoDListByUserId);
+twoDListRouter.get("/winner-list", authJwt.verifyAnyToken, twoDListController.getWinnerList);
 
 export default twoDListRouter;

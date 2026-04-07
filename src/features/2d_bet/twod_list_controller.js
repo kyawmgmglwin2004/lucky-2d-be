@@ -58,10 +58,6 @@ async function betTwoDListByUserId(req, res) {
     try {
         const { userId } = req.params;
         const { page = 1, limit = 10, filterdate = null } = req.query;
-        console.log("=====userId", userId)
-        console.log("=====page", page)
-        console.log("=====limit", limit)
-        console.log("=====filterdate", filterdate)
         const serviceRes = await twodListService.betTwoDListByUserId(userId, page, limit, filterdate);
         return res.status(serviceRes.code).json(serviceRes);
     } catch (error) {
@@ -71,9 +67,23 @@ async function betTwoDListByUserId(req, res) {
     }
 }
 
+async function getWinnerList(req, res) {
+    try {
+        const { page, limit, filterdate } = req.query;
+        const type = "2d";
+        const serviceRes = await twodListService.getWinnerList(page, limit, filterdate, type);
+        return res.status(serviceRes.code).json(serviceRes);
+    } catch (error) {
+        console.error("2d winner list :", error);
+
+        return res.status(500).json(StatusCode.UNKNOWN("SERVER ERROR"));
+    }
+}
+
 export default {
     twoDList,
     createNewNumbersList,
     betTwoD,
-    betTwoDListByUserId
+    betTwoDListByUserId,
+    getWinnerList
 }

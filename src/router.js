@@ -11,6 +11,7 @@ import phoneRouter from "./features/admin/transcation_phone/phone_route.js";
 import imageRouter from "./features/admin/slide_images/image_route.js";
 import threeDBetRouter from "./features/3d-bet/threed_bet_route.js";
 import adminThreeDRouter from "./features/admin/3d/three_d_route.js";
+import threeDResultRouter from "./features/admin/3d_result/three_d_result_route.js";
 
 
 
@@ -30,6 +31,7 @@ router.use("/admin/phone", phoneRouter);
 router.use("/admin/image", imageRouter);
 router.use("/threed", threeDBetRouter);
 router.use("/admin/three-d", adminThreeDRouter);
+router.use("/admin/three-d-result", threeDResultRouter);
 
 
 export default router;

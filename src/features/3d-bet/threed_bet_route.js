@@ -7,5 +7,6 @@ const threeDBetRouter = Router();
 threeDBetRouter.post("/bet-three-d", authJwt.verifyAnyToken, threeDBetController.betThreeD);
 threeDBetRouter.get("/three-d-list", authJwt.verifyAnyToken, threeDBetController.threeDList);
 threeDBetRouter.get("/three-d-bet-history/:user_id", authJwt.verifyAnyToken, threeDBetController.getThreeDBetHistoryByUserId);
+threeDBetRouter.get("/three-d-winner-list", authJwt.verifyAnyToken, threeDBetController.getWinnerList);
 
 export default threeDBetRouter;

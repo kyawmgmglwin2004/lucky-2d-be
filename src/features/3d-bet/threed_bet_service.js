@@ -292,8 +292,83 @@ async function getThreeDBetHistoryByUserId(userId, page, limit, filterdate = nul
     }
 }
 
+async function getWinnerList(page = 1, limit = 10, filterdate = null, type) {
+    let connection;
+
+    try {
+        const currentPage = parseInt(page) > 0 ? parseInt(page) : 1;
+        const itemsPerPage = parseInt(limit) > 0 ? parseInt(limit) : 10;
+        const offset = (currentPage - 1) * itemsPerPage;
+
+        connection = await Mysql.getConnection();
+
+        let whereConditions = ['b.is_paid = 1', 'b.type = ?'];
+        let queryParams = [type];
+
+        if (filterdate) {
+            whereConditions.push('DATE(b.bet_date) = ?');
+            queryParams.push(filterdate);
+        }
+
+        const whereClause = "WHERE " + whereConditions.join(' AND ');
+
+        const sql = `
+            SELECT 
+                b.id,
+                b.user_id,
+                u.name AS user_name,
+                u.phone AS phone,
+                b.batch_id,
+                b.number,
+                b.type,
+                b.amount,
+                DATE_FORMAT(b.bet_date, '%Y-%m-%d') AS bet_date,
+                b.session,
+                b.is_paid,
+                COUNT(*) OVER() AS totalRecords
+            FROM bets b
+            LEFT JOIN users u ON b.user_id = u.id
+            ${whereClause}
+            ORDER BY b.id DESC
+            LIMIT ? OFFSET ?
+        `;
+
+        const finalParams = [...queryParams, itemsPerPage, offset];
+        const [rows] = await connection.query(sql, finalParams);
+
+        if (rows.length === 0) {
+            return StatusCode.NOT_FOUND("2d winner list not found");
+        }
+
+        const totalRecords = rows[0].totalRecords;
+        const totalPages = Math.ceil(totalRecords / itemsPerPage);
+
+        const cleanData = rows.map(({ totalRecords, ...rest }) => rest);
+
+        const responseData = {
+            data: cleanData,
+            pagination: {
+                currentPage,
+                totalPages,
+                totalRecords,
+                itemsPerPage,
+                filterDate: filterdate || "All"
+            }
+        };
+
+        return StatusCode.OK("2d winner list", responseData);
+
+    } catch (error) {
+        console.error("Error get 2d winner list:", error);
+        return StatusCode.UNKNOWN("Database error");
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
 export default {
     betThreeD,
     threeDList,
-    getThreeDBetHistoryByUserId
+    getThreeDBetHistoryByUserId,
+    getWinnerList
 }

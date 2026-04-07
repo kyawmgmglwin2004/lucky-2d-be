@@ -18,6 +18,10 @@ async function updateNumberDetailById(req, res) {
     try {
         const id = req.params.id;
         const { rate, status_limit_amounts, real_limit_amounts } = req.body;
+        console.log("id : ", id);
+        console.log("rate : ", rate);
+        console.log("status_limit_amounts : ", status_limit_amounts);
+        console.log("real_limit_amounts : ", real_limit_amounts);
         const serviceRes = await twoDService.updateNumberDetailById(id, rate, status_limit_amounts, real_limit_amounts);
         return res.status(serviceRes.code).json(serviceRes);
     } catch (error) {

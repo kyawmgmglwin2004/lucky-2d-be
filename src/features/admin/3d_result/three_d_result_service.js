@@ -35,8 +35,8 @@ async function create3DResult(result_numbers, result_date, result_round) {
 
             permutations.delete(num);
 
-            permutations.add(num + 1);
-            permutations.add(num - 1);
+            permutations.add(String(Number(num) + 1).padStart(3, '0'));
+            permutations.add(String(Number(num) - 1).padStart(3, '0'));
 
             return Array.from(permutations);
         }

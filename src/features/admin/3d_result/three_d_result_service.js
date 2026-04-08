@@ -8,7 +8,7 @@ async function create3DResult(result_numbers, result_date, result_round) {
     console.log("result_date : ", result_date);
     console.log("result_round : ", result_round);
     try {
-        if (!result_numbers || typeof result_numbers !== "number" || !result_round || typeof result_round !== "string" || !result_date) {
+        if (!result_numbers || typeof result_numbers !== "string" || !result_round || typeof result_round !== "string" || !result_date) {
             return StatusCode.INVALID_ARGUMENT("Missing required fields");
         }
 

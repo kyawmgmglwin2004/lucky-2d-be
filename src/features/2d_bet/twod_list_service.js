@@ -130,7 +130,7 @@ async function betTwoD(user_id, bets, type, session) {
         const numbersToCheck = bets.map(b => String(b.number));
         const placeholders = numbersToCheck.map(() => '?').join(',');
 
-        const checkLimitSql = `SELECT numbers, amounts, status_limit_amount FROM two_d_lists WHERE numbers IN (${placeholders})`;
+        const checkLimitSql = `SELECT numbers, amounts, status_limit_amount , real_limit_amount FROM two_d_lists WHERE numbers IN (${placeholders})`;
 
         console.log("Checking Limit SQL:", checkLimitSql, numbersToCheck);
 
@@ -140,7 +140,7 @@ async function betTwoD(user_id, bets, type, session) {
         limitRows.forEach(row => {
             listData[String(row.numbers)] = {
                 current: row.amounts,
-                limit: row.status_limit_amount
+                limit: row.real_limit_amount
             };
         });
 

@@ -94,23 +94,25 @@ async function betThreeD(user_id, bets, type) {
         const numbersToCheck = bets.map(b => String(b.number));
         const placeholders = numbersToCheck.map(() => '?').join(',');
 
-        const checkLimitSql = `SELECT numbers, amounts, status_limit_amounts FROM three_d_lists WHERE numbers IN (${placeholders})`;
+        const [limitRows] = await connection.query(
+            `SELECT numbers, amounts, status_limit_amounts , real_limit_amounts FROM three_d_lists WHERE numbers IN (${placeholders}) FOR UPDATE`,
+            numbersToCheck
+        );
 
-        console.log("Checking Limit SQL:", checkLimitSql, numbersToCheck);
+        console.log("limitRows", limitRows)
 
-        const [limitRows] = await connection.query(checkLimitSql, numbersToCheck);
-        console.log("Limit Rows:", limitRows);
         const listData = {};
         limitRows.forEach(row => {
             listData[String(row.numbers)] = {
-                current: row.amounts,
-                limit: row.status_limit_amount
+                current: Number(row.amounts),
+                limit: Number(row.real_limit_amounts)
             };
         });
 
         for (const item of bets) {
             const numKey = String(item.number);
             const data = listData[numKey];
+            console.log("data", data)
 
             if (!data) {
                 await connection.rollback();

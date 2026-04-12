@@ -17,12 +17,12 @@ async function updateAllNumberDetail(req, res) {
 async function updateNumberDetailById(req, res) {
     try {
         const id = req.params.id;
-        const { rate, status_limit_amounts, real_limit_amounts } = req.body;
+        const { rate, status_limit_amounts, real_limit_amounts, status } = req.body;
         console.log("id : ", id);
         console.log("rate : ", rate);
         console.log("status_limit_amounts : ", status_limit_amounts);
         console.log("real_limit_amounts : ", real_limit_amounts);
-        const serviceRes = await twoDService.updateNumberDetailById(id, rate, status_limit_amounts, real_limit_amounts);
+        const serviceRes = await twoDService.updateNumberDetailById(id, rate, status_limit_amounts, real_limit_amounts, status);
         return res.status(serviceRes.code).json(serviceRes);
     } catch (error) {
         console.error("3d update numbers by id :", error);

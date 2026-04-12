@@ -32,8 +32,12 @@ async function autoPayout(winningNumber, session, resultDate) {
         const [bets] = await connection.query(sql1, [winningNumber, session, resultDate]);
 
         if (!bets || bets.length === 0) {
-            await connection.rollback();
-            return StatusCode.NOT_FOUND("No winning bets");
+            await connection.commit();
+
+            return StatusCode.OK("No winning bets", {
+                totalPaid: 0,
+                details: []
+            });
         }
 
         const payoutDetails = [];
@@ -116,15 +120,15 @@ async function runAutoPayoutService(winningNumber, session, resultDate) {
         const payoutResult = await autoPayout(winningNumber, session, resultDate);
 
         if (payoutResult.code !== 200) {
-            return StatusCode.UNKNOWN(`Auto payout failed: ${payoutResult.message}`);
+            return payoutResult;
         }
 
         await recordPayoutLog(
             winningNumber,
             session,
             resultDate,
-            payoutResult.data.totalPaid,
-            payoutResult.data.details
+            payoutResult.data.totalPaid || 0,
+            payoutResult.data.details || []
         );
 
         return StatusCode.OK(
@@ -157,9 +161,123 @@ async function isResultProcessed(winningNumber, session, resultDate) {
     }
 }
 
+async function saveResult(winningNumber, set, value, session, openTime, openDate) {
+    let connection;
+    try {
+
+        if (!winningNumber || !set || !value || !session || !openTime || !openDate) {
+            return StatusCode.INVALID_ARGUMENT("Missing required fields");
+        }
+
+        connection = await Mysql.getConnection();
+
+        const exitSql = `SELECT * FROM two_d_results WHERE session = ? AND open_date = ?`;
+        const [exitResult1] = await connection.query(exitSql, [session, openDate]);
+
+        if (exitResult1.length > 0) {
+            return StatusCode.INVALID_ARGUMENT("Result already processed");
+        }
+
+        const alreadyProcessed = await isResultProcessed(winningNumber, session, openDate);
+
+        if (alreadyProcessed) {
+            return StatusCode.INVALID_ARGUMENT("Result already processed");
+        }
+
+        let sql = `
+INSERT INTO two_d_results (numbers, set_value, value, session, open_time, open_date)
+VALUES (?, ?, ?, ?, ?, ?)
+`;
+
+        const [insertResult] = await connection.query(sql, [winningNumber, set, value, session, openTime, openDate]);
+
+        if (insertResult.affectedRows === 0) {
+            return StatusCode.UNKNOWN("Failed to save result");
+        }
+
+        return StatusCode.OK("Result saved successfully");
+
+    } catch (error) {
+        console.error("Error saving result:", error);
+        return StatusCode.UNKNOWN("Database error during result saving");
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
+async function get2dResult(page = 1, limit = 10, filterDate = null) {
+    let connection;
+    try {
+        const currentPage = parseInt(page) > 0 ? parseInt(page) : 1;
+        const itemsPerPage = parseInt(limit) > 0 ? parseInt(limit) : 10;
+        const offset = (currentPage - 1) * itemsPerPage;
+
+        connection = await Mysql.getConnection();
+
+        let whereConditions = [];
+        let queryParams = [];
+
+        if (filterDate) {
+            whereConditions.push('DATE(open_date) = ?');
+            queryParams.push(filterDate);
+        }
+
+        const whereClause = whereConditions.length > 0
+            ? "WHERE " + whereConditions.join(" AND ")
+            : "";
+
+        const sql = `
+            SELECT 
+                id,
+                numbers,
+                set_value,
+                value,
+                session,
+                open_time,
+                DATE_FORMAT(open_date, '%Y-%m-%d') AS open_date,
+                COUNT(*) OVER() AS totalRecords
+            FROM two_d_results
+            ${whereClause}
+            ORDER BY id DESC
+            LIMIT ? OFFSET ?
+        `;
+
+        const finalParams = [...queryParams, itemsPerPage, offset];
+        const [rows] = await connection.query(sql, finalParams);
+
+        if (rows.length === 0) {
+            return StatusCode.NOT_FOUND("Result not found");
+        }
+
+        const totalRecords = rows[0].totalRecords;
+        const totalPages = Math.ceil(totalRecords / itemsPerPage);
+        const cleanData = rows.map(({ totalRecords, ...rest }) => rest);
+
+        const responseData = {
+            data: cleanData,
+            pagination: {
+                currentPage,
+                totalPages,
+                totalRecords,
+                itemsPerPage
+            }
+        };
+
+        return StatusCode.OK("2d result fetched successfully", responseData);
+
+    } catch (error) {
+        console.error("Error fetching result:", error);
+        return StatusCode.UNKNOWN("Database error during result fetching");
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
 export default {
     autoPayout,
     isResultProcessed,
     recordPayoutLog,
-    runAutoPayoutService
+    runAutoPayoutService,
+    saveResult,
+    get2dResult
 };

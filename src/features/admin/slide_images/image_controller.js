@@ -64,9 +64,73 @@ async function deleteImage(req, res) {
     }
 }
 
+async function createText(req, res) {
+    try {
+        const { text } = req.body;
+        const serviceRes = await imageService.createText(text);
+        if (serviceRes.code === 200) {
+            return res.status(200).json(StatusCode.OK("Text created successfully"));
+        } else {
+            return res.status(serviceRes.code).json(serviceRes);
+        }
+    } catch (error) {
+        console.error("Error creating text:", error);
+        return res.status(500).json(StatusCode.UNKNOWN("SERVER ERROR"));
+    }
+}
+
+async function updateText(req, res) {
+    try {
+        const { id } = req.params;
+        const { text } = req.body;
+        const serviceRes = await imageService.updateText(id, text);
+        if (serviceRes.code === 200) {
+            return res.status(200).json(StatusCode.OK("Text updated successfully"));
+        } else {
+            return res.status(serviceRes.code).json(serviceRes);
+        }
+    } catch (error) {
+        console.error("Error updating text:", error);
+        return res.status(500).json(StatusCode.UNKNOWN("SERVER ERROR"));
+    }
+}
+
+async function deleteText(req, res) {
+    try {
+        const { id } = req.params;
+        const serviceRes = await imageService.deleteText(id);
+        if (serviceRes.code === 200) {
+            return res.status(200).json(StatusCode.OK("Text deleted successfully"));
+        } else {
+            return res.status(serviceRes.code).json(serviceRes);
+        }
+    } catch (error) {
+        console.error("Error deleting text:", error);
+        return res.status(500).json(StatusCode.UNKNOWN("SERVER ERROR"));
+    }
+}
+
+async function getAllText(req, res) {
+    try {
+        const serviceRes = await imageService.getAllText();
+        if (serviceRes.code === 200) {
+            return res.status(200).json(serviceRes);
+        } else {
+            return res.status(serviceRes.code).json(serviceRes);
+        }
+    } catch (error) {
+        console.error("Error getting all text:", error);
+        return res.status(500).json(StatusCode.UNKNOWN("SERVER ERROR"));
+    }
+}
+
 export default {
     getAllImages,
     createImage,
     updateImage,
-    deleteImage
+    deleteImage,
+    createText,
+    updateText,
+    deleteText,
+    getAllText
 }

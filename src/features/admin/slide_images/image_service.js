@@ -126,9 +126,103 @@ async function deleteImage(id) {
     }
 }
 
+async function createText(text) {
+    let connection;
+    try {
+        if (!text) {
+            return StatusCode.INVALID_ARGUMENT("Text is required");
+        }
+        const sql = `INSERT INTO slide_texts (text) VALUES (?)`;
+        connection = await Mysql.getConnection();
+        const [rows] = await connection.query(sql, [text]);
+        if (rows.affectedRows === 0) {
+            return StatusCode.UNKNOWN("Text created failed");
+        }
+        return StatusCode.OK("Text created successfully");
+    } catch (error) {
+        console.error("Error creating text:", error);
+        return StatusCode.UNKNOWN("SERVER ERROR");
+    } finally {
+        if (connection) {
+            connection.release();
+        }
+    }
+}
+
+async function updateText(id, text) {
+    let connection;
+    try {
+        if (!text || !id) {
+            return StatusCode.INVALID_ARGUMENT("Text or id are required");
+        }
+        const sql = `UPDATE slide_texts SET text = ? WHERE id = ?`;
+        connection = await Mysql.getConnection();
+        const [rows] = await connection.query(sql, [text, id]);
+        if (rows.affectedRows === 0) {
+            return StatusCode.UNKNOWN("Text updated failed");
+        }
+        return StatusCode.OK("Text updated successfully");
+    } catch (error) {
+        console.error("Error updating text:", error);
+        return StatusCode.UNKNOWN("SERVER ERROR");
+    } finally {
+        if (connection) {
+            connection.release();
+        }
+    }
+}
+
+async function deleteText(id) {
+    let connection;
+    try {
+        if (!id) {
+            return StatusCode.INVALID_ARGUMENT("Id is required");
+        }
+        const sql = `DELETE FROM slide_texts WHERE id = ?`;
+        connection = await Mysql.getConnection();
+        const [rows] = await connection.query(sql, [id]);
+        if (rows.affectedRows === 0) {
+            return StatusCode.UNKNOWN("Text deleted failed");
+        }
+        return StatusCode.OK("Text deleted successfully");
+    } catch (error) {
+        console.error("Error deleting text:", error);
+        return StatusCode.UNKNOWN("SERVER ERROR");
+    } finally {
+        if (connection) {
+            connection.release();
+        }
+    }
+}
+
+async function getAllText() {
+    let connection;
+    try {
+        const sql = `SELECT * FROM slide_texts`;
+        connection = await Mysql.getConnection();
+        const [rows] = await connection.query(sql);
+        if (rows.length === 0) {
+            return StatusCode.NOT_FOUND("Text not found");
+        }
+        return StatusCode.OK("Text retrieved successfully", rows);
+    } catch (error) {
+        console.error("Error fetching text:", error);
+        return StatusCode.UNKNOWN("SERVER ERROR");
+    } finally {
+        if (connection) {
+            connection.release();
+        }
+    }
+}
+
+
 export default {
     getAllImages,
     createImage,
     updateImage,
-    deleteImage
+    deleteImage,
+    createText,
+    updateText,
+    deleteText,
+    getAllText
 }

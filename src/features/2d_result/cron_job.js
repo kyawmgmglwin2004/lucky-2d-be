@@ -5,11 +5,23 @@ import AutoPayoutService from "./two_d_result_service.js";
 async function getResultFromAPI() {
     try {
         const res = await fetch("https://api.thaistock2d.com/live");
+
+        if (!res.ok) {
+            console.error("❌ API Status Error:", res.status);
+            return null;
+        }
+
+        const contentType = res.headers.get("content-type");
+
+        if (!contentType || !contentType.includes("application/json")) {
+            const text = await res.text();
+            console.error("❌ Not JSON response:", text);
+            return null;
+        }
+
         const data = await res.json();
+        return data;
 
-        console.log("📡 API Data fetched");
-
-        return data.result;
     } catch (err) {
         console.error("❌ API fetch error:", err);
         return null;
@@ -20,20 +32,35 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function extractWinningNumber(results, session) {
+function extractWinningNumber(results, session, live) {
     const targetTime = session === "morning"
         ? "12:01:00"
-        : "16:30:00";
+        : "16:31:00";
 
-    console.log("🔍 Checking Result...");
-    console.log("📌 Session:", session);
-    console.log("⏰ Target Time:", targetTime);
+    let result = results.find(r => r.open_time === targetTime);
 
-    const result = results.find(
-        r => r.open_time === targetTime && r.twod !== "--"
-    );
+    if (result && result.twod !== "--") {
+        return {
+            twod: result.twod,
+            set: result.set,
+            value: result.value,
+            open_time: result.open_time,
+            open_date: result.stock_date,
+        };
+    }
 
-    return result ? result.twod : null;
+    if (live && live.twod !== "--") {
+        console.log("⚡ Using live data because result is '--'");
+        return {
+            twod: live.twod,
+            set: live.set,
+            value: live.value,
+            open_time: live.time,
+            open_date: live.date,
+        };
+    }
+
+    return null;
 }
 
 function getCurrentDate() {
@@ -50,21 +77,24 @@ async function runAutoPayoutCron(session) {
 
         const currentDate = getCurrentDate();
 
-        let winningNumber = null;
+        let winningData = null;
         let attempts = 0;
 
         const maxAttempts = 6;
         const delay = 20000;
 
-        while (!winningNumber && attempts < maxAttempts) {
+        while (!winningData && attempts < maxAttempts) {
             console.log(`🔁 Attempt ${attempts + 1}/${maxAttempts}`);
 
-            const results = await getResultFromAPI();
-            if (!results) return;
+            const data = await getResultFromAPI();
+            if (!data) return;
 
-            winningNumber = extractWinningNumber(results, session);
+            const results = data.result;
+            const live = data.live;
 
-            if (winningNumber) break;
+            winningData = extractWinningNumber(results, session, live);
+
+            if (winningData) break;
 
             console.log("⌛ Result not ready, retrying...");
             attempts++;
@@ -74,30 +104,50 @@ async function runAutoPayoutCron(session) {
             }
         }
 
-        if (!winningNumber) {
-            console.log("Result not available after retries");
+        if (!winningData) {
+            console.log("❌ Result not available after retries");
             return;
         }
 
-        console.log(`🎯 Result detected → ${winningNumber} (${session})`);
+        console.log(`🎯 Result detected → ${winningData.twod} (${session})`);
+        console.log(`📊 Set: ${winningData.set}, Value: ${winningData.value}`);
+
+        const saveResponse = await AutoPayoutService.saveResult(
+            winningData.twod,
+            winningData.set,
+            winningData.value,
+            session,
+            winningData.open_time,
+            winningData.open_date
+        );
+        if (!saveResponse || saveResponse.code !== 200) {
+            if (saveResponse.code === 400) {
+                console.log("Result already processed")
+                return;
+            }
+            return;
+        }
+
+        console.log("💾 Save success → Running payout...");
 
         const payoutResult = await AutoPayoutService.runAutoPayoutService(
-            winningNumber,
+            winningData.twod,
             session,
             currentDate
         );
 
-        console.log("Payout Response:", payoutResult);
+        console.log("✅ Payout Response:", payoutResult);
 
     } catch (err) {
-        console.error("Cron job error:", err);
+        console.error("❌ Cron job error:", err);
     }
 }
 
+
 cron.schedule(
-    "2 12 * * 1-5",
+    "1 12 * * 1-5",
     async () => {
-        console.log("12:01 PM Cron Triggered");
+        console.log("⏰ 12:01 PM Cron Triggered");
         await runAutoPayoutCron("morning");
     },
     {
@@ -106,9 +156,9 @@ cron.schedule(
 );
 
 cron.schedule(
-    "32 16 * * 1-5",
+    "31 16 * * 1-5",
     async () => {
-        console.log("4:30 PM Cron Triggered");
+        console.log("⏰ 4:31 PM Cron Triggered");
         await runAutoPayoutCron("evening");
     },
     {
@@ -116,4 +166,4 @@ cron.schedule(
     }
 );
 
-console.log("Auto payout cron started (Mon–Fri | 12:01 PM & 4:30 PM)");
+console.log("🚀 Auto payout cron started (Mon–Fri | 12:01 PM & 4:31 PM)");

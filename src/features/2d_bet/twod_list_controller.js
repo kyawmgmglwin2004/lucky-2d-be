@@ -57,8 +57,8 @@ async function betTwoD(req, res) {
 async function betTwoDListByUserId(req, res) {
     try {
         const { userId } = req.params;
-        const { page = 1, limit = 10, filterdate = null } = req.query;
-        const serviceRes = await twodListService.betTwoDListByUserId(userId, page, limit, filterdate);
+        const { page = 1, limit = 10, filterdate = null, type = null } = req.query;
+        const serviceRes = await twodListService.betTwoDListByUserId(userId, page, limit, filterdate, type);
         return res.status(serviceRes.code).json(serviceRes);
     } catch (error) {
         console.error("2d bet history by userId :", error);

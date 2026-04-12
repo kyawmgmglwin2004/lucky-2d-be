@@ -19,5 +19,9 @@ imageRouter.post("/create", authJwt.verifyAnyToken, upload.single("image"), imag
 imageRouter.post("/update/:id", authJwt.verifyAnyToken, upload.single("image"), imageController.updateImage);
 imageRouter.delete("/delete/:id", authJwt.verifyAnyToken, imageController.deleteImage);
 imageRouter.get("/get-all", imageController.getAllImages);
+imageRouter.post("/create-text", authJwt.verifyAnyToken, imageController.createText);
+imageRouter.post("/update-text/:id", authJwt.verifyAnyToken, imageController.updateText);
+imageRouter.delete("/delete-text/:id", authJwt.verifyAnyToken, imageController.deleteText);
+imageRouter.get("/get-all-text", imageController.getAllText);
 
 export default imageRouter;

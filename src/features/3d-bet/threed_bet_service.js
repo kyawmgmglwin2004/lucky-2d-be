@@ -1,6 +1,8 @@
 import StatusCode from "../../helper/statusCode.js";
 import Mysql from "../../helper/db.js";
 
+
+
 async function betThreeD(user_id, bets, type) {
     let connection;
     try {
@@ -8,44 +10,6 @@ async function betThreeD(user_id, bets, type) {
         if (!user_id || !type || !bets || bets.length === 0) {
             return StatusCode.INVALID_ARGUMENT("Invalid arguments or no numbers selected or bet session");
         }
-
-        function isBettingAllowed() {
-            const now = new Date(
-                new Date().toLocaleString("en-US", { timeZone: "Asia/Yangon" })
-            );
-
-            const day = now.getDate();
-            const hours = now.getHours();
-            const minutes = now.getMinutes();
-
-            if (day === 1 || day === 16) {
-                if (hours > 14 || (hours === 14 && minutes >= 30)) {
-                    return {
-                        ok: false,
-                        message: "ယနေ့ (1/16) သည် 2:30 PM ကျော်သွားပါပြီ။ မနက်ဖြန်မှ ထိုးနိုင်ပါသည်။"
-                    };
-                }
-            }
-
-            return { ok: true };
-        }
-
-        const validation = isBettingAllowed();
-
-        if (!validation.ok) {
-            return StatusCode.INVALID_ARGUMENT(validation.message);
-        }
-
-        function getSessionByDate(date) {
-            const day = date.getDate();
-
-            if (day >= 2 && day <= 16) {
-                return "first round";
-            } else {
-                return "second round";
-            }
-        }
-        const session = getSessionByDate(new Date());
 
         const seenNumbers = new Set();
         let totalBetAmount = 0;
@@ -89,13 +53,58 @@ async function betThreeD(user_id, bets, type) {
             return StatusCode.INVALID_ARGUMENT(`လက်ကျန်ငွေ မလုံလောက်ပါ`);
         }
 
+        const now = new Date(
+            new Date().toLocaleString("en-US", { timeZone: "Asia/Yangon" })
+        );
+
+        const currentMonth = now.getMonth() + 1;
+
+
+        function getSessionByDate(date) {
+            const day = date.getDate();
+
+            if (day >= 2 && day <= 16) {
+                return "first round";
+            } else {
+                return "second round";
+            }
+        }
+
+        const session = getSessionByDate(new Date());
+
+        const [statusRows] = await connection.query(
+            `SELECT * FROM time_status WHERE type = ? AND month = ? AND session = ?`,
+            [type, currentMonth, session]
+        );
+
+        if (statusRows.length === 0) {
+            return StatusCode.NOT_FOUND("3D betting is not open for this month");
+        }
+
+        const status = statusRows[0];
+        const openTime = new Date(status.monthly_open_time);
+        const closeTime = new Date(status.monthly_close_time);
+        const closeStatus = status.status;
+
+        if (closeStatus === 0) {
+            return StatusCode.INVALID_ARGUMENT("ထိုးချိန် ပြီးပါပြီ");
+        }
+
+        if (now < openTime) {
+            return StatusCode.INVALID_ARGUMENT("ထိုးချိန် မရောက်သေးပါ");
+        }
+
+        if (now > closeTime) {
+            return StatusCode.INVALID_ARGUMENT("ထိုးချိန် ပြီးပါပြီ");
+        }
+
         await connection.beginTransaction();
 
         const numbersToCheck = bets.map(b => String(b.number));
         const placeholders = numbersToCheck.map(() => '?').join(',');
 
         const [limitRows] = await connection.query(
-            `SELECT numbers, amounts, status_limit_amounts , real_limit_amounts FROM three_d_lists WHERE numbers IN (${placeholders}) FOR UPDATE`,
+            `SELECT numbers, amounts, status, status_limit_amounts , real_limit_amounts FROM three_d_lists WHERE numbers IN (${placeholders}) FOR UPDATE`,
             numbersToCheck
         );
 
@@ -105,7 +114,8 @@ async function betThreeD(user_id, bets, type) {
         limitRows.forEach(row => {
             listData[String(row.numbers)] = {
                 current: Number(row.amounts),
-                limit: Number(row.real_limit_amounts)
+                limit: Number(row.real_limit_amounts),
+                status: row.status
             };
         });
 
@@ -118,6 +128,11 @@ async function betThreeD(user_id, bets, type) {
                 await connection.rollback();
                 console.log(`Number ${numKey} not found in DB. Available keys:`, Object.keys(listData));
                 return StatusCode.INVALID_ARGUMENT(`Number ${item.number} is invalid or not found.`);
+            }
+
+            if (data.status === 0) {
+                await connection.rollback();
+                return StatusCode.INVALID_ARGUMENT(`Number ${item.number} မှာ ထိုးခွင့် ပိတ်ထားပါတယ်`);
             }
 
             if (data.current + item.amount > data.limit) {
@@ -134,7 +149,7 @@ async function betThreeD(user_id, bets, type) {
         const batchId = "BATCH_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
 
         const insertBetSql = `INSERT INTO bets (batch_id, user_id, number, amount, type, session,  bet_date) 
-                              VALUES (?, ?, ?, ?, ?, ?, CURDATE())`;
+                              VALUES (?, ?, ?, ?, ?, ?, NOW())`;
 
         const updateListSql = `UPDATE three_d_lists SET amounts = amounts + ? WHERE numbers = ?`;
 
@@ -174,7 +189,8 @@ async function threeDList(category_key) {
         t.category_key,
         jt.number,
         nl.rate,
-        nl.amounts
+        nl.amounts,
+        nl.status
     FROM three_d_master_sets t
     JOIN JSON_TABLE(
         t.numbers,   
@@ -256,7 +272,7 @@ async function getThreeDBetHistoryByUserId(userId, page, limit, filterdate = nul
                 number,
                 type,
                 amount,
-                DATE_FORMAT(bet_date, '%Y-%m-%d') AS bet_date,
+                DATE_FORMAT(bet_date, '%Y-%m-%d %H:%i:%s') AS bet_date,
                 session,
                 is_paid
             FROM bets 

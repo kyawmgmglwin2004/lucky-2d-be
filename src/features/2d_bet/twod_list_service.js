@@ -14,7 +14,8 @@ async function twoDList(category_key, page, limit) {
                 t.category_key,
                 jt.number,
                 nl.rate,
-                nl.amounts
+                nl.amounts,
+                nl.status
             FROM two_d_master_sets t
             JOIN JSON_TABLE(
                 t.numbers,   
@@ -86,6 +87,10 @@ async function betTwoD(user_id, bets, type, session) {
         const seenNumbers = new Set();
         let totalBetAmount = 0;
 
+        const now = new Date();
+        const today = now.getDay();
+        const currentTime = now.toTimeString();
+
         for (const item of bets) {
             const numStr = String(item.number);
             const amount = Number(item.amount);
@@ -125,12 +130,36 @@ async function betTwoD(user_id, bets, type, session) {
             return StatusCode.INVALID_ARGUMENT(`လက်ကျန်ငွေ မလုံလောက်ပါ`);
         }
 
+        const statusSql = `
+            SELECT * FROM time_status WHERE weeky_day = ? AND session = ?
+            LIMIT 1
+        `;
+
+        const [statusRows] = await connection.query(statusSql, [today, session]);
+
+        if (statusRows.length === 0) {
+            return StatusCode.NOT_FOUND("session not found");
+        }
+
+        const status = statusRows[0];
+
+        if (status.status !== 1) {
+            return StatusCode.INVALID_ARGUMENT("ယခု ေန့အတွက် ထိုးရန်  ပိတ်ထားပါသည်");
+        }
+
+        if (
+            currentTime < status.open_time || currentTime > status.close_time
+        ) {
+            return StatusCode.INVALID_ARGUMENT("ယခု အချိန်အတွက် ထိုးရန်  ပိတ်ထားပါသည်");
+        }
+
+
         await connection.beginTransaction();
 
         const numbersToCheck = bets.map(b => String(b.number));
         const placeholders = numbersToCheck.map(() => '?').join(',');
 
-        const checkLimitSql = `SELECT numbers, amounts, status_limit_amount , real_limit_amount FROM two_d_lists WHERE numbers IN (${placeholders})`;
+        const checkLimitSql = `SELECT numbers, amounts, status, status_limit_amount , real_limit_amount FROM two_d_lists WHERE numbers IN (${placeholders})`;
 
         console.log("Checking Limit SQL:", checkLimitSql, numbersToCheck);
 
@@ -140,7 +169,8 @@ async function betTwoD(user_id, bets, type, session) {
         limitRows.forEach(row => {
             listData[String(row.numbers)] = {
                 current: row.amounts,
-                limit: row.real_limit_amount
+                limit: row.real_limit_amount,
+                status: row.status
             };
         });
 
@@ -152,6 +182,10 @@ async function betTwoD(user_id, bets, type, session) {
                 await connection.rollback();
                 console.log(`Number ${numKey} not found in DB. Available keys:`, Object.keys(listData));
                 return StatusCode.INVALID_ARGUMENT(`Number ${item.number} is invalid or not found.`);
+            }
+            if (data.status === 0) {
+                await connection.rollback();
+                return StatusCode.INVALID_ARGUMENT(`Number ${item.number} ကို ပိတ်ထားပါသည်`);
             }
 
             if (data.current + item.amount > data.limit) {
@@ -168,7 +202,7 @@ async function betTwoD(user_id, bets, type, session) {
         const batchId = "BATCH_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
 
         const insertBetSql = `INSERT INTO bets (batch_id, user_id, number, amount, type, session,  bet_date) 
-                              VALUES (?, ?, ?, ?, ?, ?, CURDATE())`;
+                              VALUES (?, ?, ?, ?, ?, ?, NOW())`;
 
         const updateListSql = `UPDATE two_d_lists SET amounts = amounts + ? WHERE numbers = ?`;
 
@@ -199,7 +233,7 @@ async function betTwoD(user_id, bets, type, session) {
     }
 }
 
-async function betTwoDListByUserId(userId, page = 1, limit = 10, filterDate = null) {
+async function betTwoDListByUserId(userId, page = 1, limit = 10, filterDate = null, type) {
     let connection;
 
     try {
@@ -222,6 +256,11 @@ async function betTwoDListByUserId(userId, page = 1, limit = 10, filterDate = nu
             queryParams.push(filterDate);
         }
 
+        if (type) {
+            whereConditions.push('type = ?');
+            queryParams.push(type);
+        }
+
         const whereClause = whereConditions.join(' AND ');
 
         const countSql = `SELECT COUNT(*) as total FROM bets WHERE ${whereClause}`;
@@ -237,7 +276,7 @@ async function betTwoDListByUserId(userId, page = 1, limit = 10, filterDate = nu
                 number,
                 type,
                 amount,
-                DATE_FORMAT(bet_date, '%Y-%m-%d') AS bet_date,
+                DATE_FORMAT(bet_date, '%Y-%m-%d %H:%i:%s') AS bet_date,
                 session,
                 is_paid
             FROM bets 

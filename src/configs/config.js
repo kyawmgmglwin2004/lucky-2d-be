@@ -8,6 +8,7 @@ console.log("Config : ", {
   DB_USER: process.env.DB_USER,
   DB_PASSWORD: process.env.DB_PASSWORD,
   DB_NAME: process.env.DB_NAME,
+  TIME_ZONE: process.env.TIME_ZONE,
 })
 
 export const config = {
@@ -17,6 +18,7 @@ export const config = {
   DB_USER: process.env.DB_USER,
   DB_PASSWORD: process.env.DB_PASSWORD,
   DB_NAME: process.env.DB_NAME,
+  TIME_ZONE: process.env.TIME_ZONE,
   JWT_SECRET: process.env.JWT_SECRET,
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN,
   ADM_JWT_SECRET: process.env.ADM_JWT_SECRET,

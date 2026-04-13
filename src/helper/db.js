@@ -1,6 +1,6 @@
 // helpers/database_helper.js
 import mysql from "mysql2/promise";
-import {config} from "../configs/config.js";
+import { config } from "../configs/config.js";
 
 // Create a promise-based connection pool
 const pool = mysql.createPool({
@@ -8,6 +8,7 @@ const pool = mysql.createPool({
   host: config.DB_HOST,
   port: config.DB_PORT,
   user: config.DB_USER,
+  timezone: config.TIME_ZONE,
   password: config.DB_PASSWORD,
   database: config.DB_NAME,
   waitForConnections: true,

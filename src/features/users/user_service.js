@@ -108,10 +108,11 @@ async function userRegister(name, phone, password) {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    const createdAt = new Date().toISOString().slice(0, 19).replace("T", " ");
 
-    let sql = `INSERT INTO users (name, phone, password, created_at) VALUES (?, ?, ?, NOW())`;
+    let sql = `INSERT INTO users (name, phone, password, created_at) VALUES (?, ?, ?, ?)`;
 
-    const [result] = await connection.query(sql, [name, phone, hashedPassword]);
+    const [result] = await connection.query(sql, [name, phone, hashedPassword, createdAt]);
 
     if (result.affectedRows === 0) {
       return StatusCode.UNKNOWN("User registration failed");

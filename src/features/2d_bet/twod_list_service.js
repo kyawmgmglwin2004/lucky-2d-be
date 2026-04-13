@@ -147,6 +147,10 @@ async function betTwoD(user_id, bets, type, session) {
             return StatusCode.INVALID_ARGUMENT("ယခု ေန့အတွက် ထိုးရန်  ပိတ်ထားပါသည်");
         }
 
+        console.log("current Time", currentTime)
+        console.log("status open time", status.open_time)
+        console.log("status close time", status.close_time)
+
         if (
             currentTime < status.open_time || currentTime > status.close_time
         ) {

@@ -18,6 +18,6 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /root/lucky-2d-be
-            git pull origin main
+            git pull origin mai
             npm install
             pm2 restart 2d-be

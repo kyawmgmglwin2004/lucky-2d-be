@@ -31,10 +31,10 @@ async function adminLogin(req, res) {
 
             res.cookie('adminRefreshToken', adminRefreshToken, {
                 httpOnly: true,
-                secure: true, // true only if HTTPS
-                sameSite: "None", // or "None" (cross-origin)
+                secure: true,
+                sameSite: "None",
                 domain: ".zay2d3d.com",
-                maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+                maxAge: 7 * 24 * 60 * 60 * 1000
             });
 
             return res.status(200).json(StatusCode.OK("Login success", { admin, accessToken }));

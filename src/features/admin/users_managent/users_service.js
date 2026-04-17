@@ -128,7 +128,7 @@ async function changeToAgent(id, role, agentCode, twoDpercent, threeDpercent) {
         }
 
         connection = await Mysal.getConnection();
-        const sql = `SELECT id FROM users WHERE id = ?`;
+        const sql = `SELECT id, agent_code FROM users WHERE id = ?`;
         const [rows] = await connection.query(sql, userId);
         if (rows.length === 0) {
             return StatusCode.NOT_FOUND("user not found for update");
@@ -149,15 +149,18 @@ async function changeToAgent(id, role, agentCode, twoDpercent, threeDpercent) {
             updates.push("role = ?");
             params.push(role);
         }
-        if (agentCode) {
-            updates.push("agent_code = ?");
-            params.push(agentCode);
+        if (rows[0].agent_code == null || rows[0].agent_code === "") {
+            if (agentCode) {
+                updates.push("agent_code = ?");
+                params.push(agentCode);
+            }
         }
-        if (twoDpercent) {
+        if (twoDpercent !== undefined && twoDpercent !== null) {
             updates.push("two_d_percent = ?");
             params.push(twoDpercent);
         }
-        if (threeDpercent) {
+
+        if (threeDpercent !== undefined && threeDpercent !== null) {
             updates.push("three_d_percent = ?");
             params.push(threeDpercent);
         }

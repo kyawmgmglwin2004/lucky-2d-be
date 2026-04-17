@@ -218,7 +218,7 @@ async function get2dResult(page = 1, limit = 10, filterDate = null) {
         let queryParams = [];
 
         if (filterDate) {
-            whereConditions.push('DATE(open_date) = ?');
+            whereConditions.push('open_date = ?');
             queryParams.push(filterDate);
         }
 

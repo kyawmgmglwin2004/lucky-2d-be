@@ -46,6 +46,8 @@ async function getAlluser(id, isActive, phone, page, name, limit) {
         u.role,
         u.agent_code,
         u.refer_code,
+        u.two_d_percent,
+        u.three_d_percent,
         u.created_at,
         w.balance AS balance,
         COUNT(*) OVER() AS totalRecords

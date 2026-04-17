@@ -95,7 +95,8 @@ async function getTotalBetAmount(filterDate, type, session) {
         let sql = `
             SELECT SUM(amount) as totalAmount 
             FROM bets 
-            WHERE bet_date = ? AND type = ?
+            WHERE DATE(bet_date) = ? 
+            AND type = ?
         `;
 
         const params = [filterDate, type];
@@ -108,7 +109,7 @@ async function getTotalBetAmount(filterDate, type, session) {
         connection = await Mysql.getConnection();
         const [result] = await connection.query(sql, params);
 
-        const totalAmount = result[0].totalAmount || 0;
+        const totalAmount = result[0].totalAmount ?? 0;
 
         return StatusCode.OK("get total bet amount", {
             totalAmount
@@ -135,7 +136,7 @@ async function getTotalPayoutAmount(filterDate, session) {
             JSON_TABLE(b.details, '$[*]' COLUMNS (
                 payout INT PATH '$.payout'
             )) j
-            WHERE b.result_date = ?
+            WHERE DATE(b.result_date) = ?
            AND CHAR_LENGTH(b.number) = 2
         `;
 
@@ -148,13 +149,9 @@ async function getTotalPayoutAmount(filterDate, session) {
 
         connection = await Mysql.getConnection();
         const [result] = await connection.query(sql, params);
-        console.log("result. ==", result)
+        console.log("result. payout ==", result)
 
-        const totalAmount = result[0].totalPayout;
-
-        if (!totalAmount) {
-            return StatusCode.NOT_FOUND("Don't have in payout logs table");
-        }
+        const totalAmount = result[0].totalPayout ?? 0;
 
         return StatusCode.OK("get total payout amount", {
             totalAmount
@@ -168,10 +165,50 @@ async function getTotalPayoutAmount(filterDate, session) {
     }
 }
 
+async function getTotalAgentCommissions(filterDate, session) {
+    let connection;
+    try {
+        if (!filterDate) {
+            return StatusCode.INVALID_ARGUMENT("Missing required fields (filterDate)");
+        }
+
+        let sql = `
+           SELECT COALESCE(SUM(amount), 0) AS totalAgentCommission
+            FROM agent_commissions
+            WHERE DATE(created_at) = ?
+            AND type = '2d'
+        `;
+
+        const params = [filterDate];
+
+        if (session && session !== "all") {
+            sql += " AND session = ?";
+            params.push(session);
+        }
+
+        connection = await Mysql.getConnection();
+        const [result] = await connection.query(sql, params);
+        console.log("result. ==", result)
+
+        const totalAmount = result[0].totalAgentCommission ?? 0;
+
+        return StatusCode.OK("get total agent commission amount", {
+            totalAmount
+        });
+
+    } catch (error) {
+        console.error("Error get total agent commission amount:", error);
+        return StatusCode.UNKNOWN("Database error");
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
 export default {
     updateAllNumberDetails,
     updateNumberDetailById,
     getTotalAmontForEachNumber,
     getTotalBetAmount,
-    getTotalPayoutAmount
+    getTotalPayoutAmount,
+    getTotalAgentCommissions
 };

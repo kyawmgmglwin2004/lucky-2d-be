@@ -6,7 +6,7 @@ async function getAllUsers(req, res) {
         const isActive = parseInt(req.query.is_active);
 
         const { id, phone, name, page = 1, limit = 10 } = req.query;
-        
+
         const users = await usersService.getAlluser(id, isActive, phone, page, name, limit);
 
         return res.status(users.code).json(users);
@@ -19,23 +19,46 @@ async function getAllUsers(req, res) {
 async function suspendedAndUnsuspendedUser(req, res) {
     try {
         const id = req.params.id;
-        const isActive  = req.body.isActive;
-        console.log("========", id, isActive)
-        // if(!id || isNaN(id) || id !== 'number' || !isActive || typeof isActive !== 'number') {
-        //     return res.status(400).json(StatusCode.INVALID_ARGUMENT("Invalid  ID or status"));
-        // }
+        const isActive = req.body.isActive;
 
         const result = await usersService.banUpdate(id, isActive);
         return res.status(result.code).json(result);
 
     } catch (error) {
-         console.error("Error updating users status:", error);
+        console.error("Error updating users status:", error);
         res.status(500).json(StatusCode.UNKNOWN("Failed to update users status"));
     }
 }
 
+async function changeToAgent(req, res) {
+    try {
+        const id = req.params.id;
+        const { role, agentCode, twoDpercent, threeDpercent } = req.body;
+
+        const result = await usersService.changeToAgent(id, role, agentCode, twoDpercent, threeDpercent);
+        return res.status(result.code).json(result);
+    } catch (error) {
+        console.error("Error changing user to agent:", error);
+        res.status(500).json(StatusCode.UNKNOWN("Failed to change user to agent"));
+    }
+}
+
+async function getAgentCommissionList(req, res) {
+    try {
+        const { agentId, page = 1, limit = 10, filterDate } = req.query;
+
+        const users = await usersService.getAgentCommissionList(agentId, page, limit, filterDate);
+
+        return res.status(users.code).json(users);
+    } catch (error) {
+        console.log("Error get agent commission list", error);
+        return res.status(500).json("server error")
+    }
+}
 
 export default {
     getAllUsers,
     suspendedAndUnsuspendedUser,
+    changeToAgent,
+    getAgentCommissionList
 }

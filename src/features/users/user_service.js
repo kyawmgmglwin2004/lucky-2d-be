@@ -147,7 +147,9 @@ async function getUserById(userId) {
         SELECT 
             u.id, 
             u.name, 
-            u.phone, 
+            u.phone,
+            u.refer_code,
+            u.role, 
             u.created_at,
             COALESCE(w.balance, 0) AS amount
         FROM users u
@@ -196,6 +198,40 @@ async function getBalance(userId) {
   }
 }
 
+async function addReferCode(userId, referCode) {
+  let connection;
+  try {
+    if (!userId || !referCode) {
+      return StatusCode.INVALID_ARGUMENT("Missing required fields");
+    }
+    const sql = `SELECT id FROM users WHERE id = ?`;
+    connection = await Mysql.getConnection();
+    const [rows] = await connection.query(sql, [userId]);
+    if (rows.length === 0) {
+      return StatusCode.NOT_FOUND("User မရှိပါ");
+    }
+
+    const sql2 = `SELECT agent_code  FROM users WHERE agent_code = ?`;
+    const [rows2] = await connection.query(sql2, [referCode]);
+    if (rows2.length === 0) {
+      return StatusCode.NOT_FOUND("Agent code မမှန်ပါ");
+    }
+
+    const sql1 = `UPDATE users SET refer_code = ? WHERE id = ?`;
+    const [result] = await connection.query(sql1, [referCode, userId]);
+    if (result.affectedRows === 0) {
+      return StatusCode.UNKNOWN("Refer code save failed");
+    }
+
+    return StatusCode.OK("Refer code saved successfully");
+  } catch (error) {
+    console.error("Error adding refer code:", error);
+    return StatusCode.UNKNOWN("Database error");
+  } finally {
+    if (connection) connection.release();
+  }
+}
+
 
 export default {
   userLogin,
@@ -203,5 +239,6 @@ export default {
   getUserById,
   saveRefreshToken,
   findUserByRefreshToken,
-  getBalance
+  getBalance,
+  addReferCode
 }

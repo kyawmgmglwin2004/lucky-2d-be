@@ -76,162 +76,381 @@ async function createNewNumbersList(category_key, numbers) {
     }
 }
 
+// async function betTwoD(user_id, bets, type, session) {
+//     let connection;
+//     try {
+//         if (!user_id || !type || !bets || bets.length === 0 || !session || typeof session !== "string") {
+//             return StatusCode.INVALID_ARGUMENT("Invalid arguments or no numbers selected or bet session");
+//         }
+
+//         const seenNumbers = new Set();
+//         let totalBetAmount = 0;
+
+//         const now = new Date();
+//         const today = now.getDay();
+//         const currentTime = now.toTimeString();
+
+//         for (const item of bets) {
+//             const numStr = String(item.number);
+//             const amount = Number(item.amount);
+
+//             if (isNaN(amount)) {
+//                 return StatusCode.INVALID_ARGUMENT(`Invalid amount for number ${item.number}`);
+//             }
+
+//             if (amount <= 0) {
+//                 return StatusCode.INVALID_ARGUMENT(`ထိုးငွေသည် 0 ထက်ကြီးရပါမည် (Number: ${item.number})`);
+//             }
+
+//             if (!Number.isInteger(amount)) {
+//                 return StatusCode.INVALID_ARGUMENT(`Amount must be integer (Number: ${item.number})`);
+//             }
+
+//             if (seenNumbers.has(numStr)) {
+//                 return StatusCode.INVALID_ARGUMENT(`Duplicate number found: ${item.number}`);
+//             }
+
+//             seenNumbers.add(numStr);
+//             totalBetAmount += amount;
+//         }
+
+//         connection = await Mysql.getConnection();
+
+//         const [walletRows] = await connection.query(
+//             `SELECT balance FROM wallets WHERE user_id = ?`,
+//             [user_id]
+//         );
+
+//         if (walletRows.length === 0) {
+//             return StatusCode.NOT_FOUND("User wallet not found");
+//         }
+
+//         const currentBalance = walletRows[0].balance;
+
+//         if (totalBetAmount > currentBalance) {
+//             return StatusCode.INVALID_ARGUMENT("လက်ကျန်ငွေ မလုံလောက်ပါ");
+//         }
+
+//         const [statusRows] = await connection.query(
+//             `SELECT * FROM time_status WHERE weeky_day = ? AND session = ? LIMIT 1`,
+//             [today, session]
+//         );
+
+//         if (statusRows.length === 0) {
+//             return StatusCode.NOT_FOUND("session not found");
+//         }
+
+//         const status = statusRows[0];
+
+//         if (status.status !== 1) {
+//             return StatusCode.INVALID_ARGUMENT("ယခုနေ့အတွက် ထိုးရန် ပိတ်ထားပါသည်");
+//         }
+
+//         if (currentTime < status.open_time || currentTime > status.close_time) {
+//             return StatusCode.INVALID_ARGUMENT("ယခုအချိန်တွင် ထိုးရန် ပိတ်ထားပါသည်");
+//         }
+
+//         const [userRows] = await connection.query(
+//             `SELECT id, refer_code FROM users WHERE id = ?`,
+//             [user_id]
+//         );
+
+//         const user = userRows[0];
+//         let agent = null;
+
+//         if (user.refer_code) {
+//             const [agentRows] = await connection.query(
+//                 `SELECT id, two_d_percent FROM users WHERE agent_code = ?`,
+//                 [user.refer_code]
+//             );
+
+//             if (agentRows.length > 0) {
+//                 agent = agentRows[0];
+
+//                 if (agent.id === user_id) {
+//                     agent = null;
+//                 }
+//             }
+//         }
+
+//         await connection.beginTransaction();
+
+//         const numbersToCheck = bets.map(b => String(b.number));
+//         const placeholders = numbersToCheck.map(() => '?').join(',');
+
+//         const [limitRows] = await connection.query(
+//             `SELECT numbers, amounts, status, real_limit_amount 
+//              FROM two_d_lists 
+//              WHERE numbers IN (${placeholders})`,
+//             numbersToCheck
+//         );
+
+//         const listData = {};
+//         limitRows.forEach(row => {
+//             listData[String(row.numbers)] = {
+//                 current: row.amounts,
+//                 limit: row.real_limit_amount,
+//                 status: row.status
+//             };
+//         });
+
+//         for (const item of bets) {
+//             const numKey = String(item.number);
+//             const data = listData[numKey];
+
+//             if (!data) {
+//                 await connection.rollback();
+//                 return StatusCode.INVALID_ARGUMENT(`Number ${item.number} invalid`);
+//             }
+
+//             if (data.status === 0) {
+//                 await connection.rollback();
+//                 return StatusCode.INVALID_ARGUMENT(`Number ${item.number} ပိတ်ထားပါသည်`);
+//             }
+
+//             if (data.current + item.amount > data.limit) {
+//                 await connection.rollback();
+//                 return StatusCode.INVALID_ARGUMENT(`Number ${item.number} limit ပြည့်ပါပြီ`);
+//             }
+//         }
+
+//         await connection.query(
+//             `UPDATE wallets SET balance = balance - ? WHERE user_id = ?`,
+//             [totalBetAmount, user_id]
+//         );
+
+//         const batchId = "BATCH_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+
+//         for (const item of bets) {
+//             await connection.query(
+//                 `INSERT INTO bets (batch_id, user_id, number, amount, type, session, bet_date)
+//                  VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+//                 [batchId, user_id, item.number, item.amount, type, session]
+//             );
+
+//             await connection.query(
+//                 `UPDATE two_d_lists SET amounts = amounts + ? WHERE numbers = ?`,
+//                 [item.amount, item.number]
+//             );
+//         }
+
+//         if (agent && agent.two_d_percent > 0) {
+//             const percent = Number(agent.two_d_percent || 0);
+//             const agentCommission = (totalBetAmount * percent) / 100;
+
+//             if (agentCommission > 0) {
+//                 await connection.query(
+//                     `INSERT INTO agent_commissions 
+//                     (agent_id, user_id, batch_id, amount, type, two_d_percent, created_at)
+//                     VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+//                     [agent.id, user_id, batchId, agentCommission, "2d", percent]
+//                 );
+
+//                 await connection.query(
+//                     `UPDATE wallets SET balance = balance + ? WHERE user_id = ?`,
+//                     [agentCommission, agent.id]
+//                 );
+//             }
+//         }
+
+//         await connection.commit();
+
+//         return StatusCode.OK("Bet placed successfully", {
+//             batch_id: batchId,
+//             total_deducted: totalBetAmount
+//         });
+
+//     } catch (error) {
+//         if (connection) await connection.rollback();
+//         console.error("Error placing bet:", error);
+//         return StatusCode.UNKNOWN("Database error");
+//     } finally {
+//         if (connection) connection.release();
+//     }
+// }
+
 async function betTwoD(user_id, bets, type, session) {
-    console.log(user_id, bets, type);
     let connection;
-    try {
 
-        if (!user_id || !type || !bets || bets.length === 0 || !session || typeof session !== "string") {
-            return StatusCode.INVALID_ARGUMENT("Invalid arguments or no numbers selected or bet session");
+    const safeQuery = async (conn, sql, params, errorMsg) => {
+        const [result] = await conn.query(sql, params);
+        if (!result || result.affectedRows === 0) {
+            throw new Error(errorMsg);
         }
-        const seenNumbers = new Set();
-        let totalBetAmount = 0;
+        return result;
+    };
 
-        const now = new Date();
-        const today = now.getDay();
-        const currentTime = now.toTimeString();
+    try {
+        if (!user_id || !type || !bets || bets.length === 0 || !session) {
+            return StatusCode.INVALID_ARGUMENT("Invalid arguments");
+        }
+
+        let totalBetAmount = 0;
+        const seenNumbers = new Set();
 
         for (const item of bets) {
             const numStr = String(item.number);
             const amount = Number(item.amount);
 
-            if (isNaN(amount)) {
-                return StatusCode.INVALID_ARGUMENT(`Invalid amount for number ${item.number}`);
+            if (isNaN(amount) || amount <= 0 || !Number.isInteger(amount)) {
+                return StatusCode.INVALID_ARGUMENT(`Invalid amount for ${item.number}`);
             }
-
-            if (amount <= 0) {
-                return StatusCode.INVALID_ARGUMENT(`ထိုးငွေသည် 0 ထက်ကြီးရပါမည် (Number: ${item.number})`);
-            }
-            if (!Number.isInteger(amount)) {
-                return StatusCode.INVALID_ARGUMENT(`Amount must be integer (Number: ${item.number})`);
-            }
-
 
             if (seenNumbers.has(numStr)) {
-                return StatusCode.INVALID_ARGUMENT(`Duplicate number found: ${item.number}. Please remove duplicates.`);
+                return StatusCode.INVALID_ARGUMENT(`Duplicate number ${item.number}`);
             }
 
             seenNumbers.add(numStr);
-            totalBetAmount += Number(item.amount);
+            totalBetAmount += amount;
         }
 
         connection = await Mysql.getConnection();
 
-        const getBalanceSql = `SELECT balance FROM wallets WHERE user_id = ?`;
-        const [walletRows] = await connection.query(getBalanceSql, [user_id]);
+        const [walletRows] = await connection.query(
+            `SELECT balance FROM wallets WHERE user_id = ?`,
+            [user_id]
+        );
 
         if (walletRows.length === 0) {
-            return StatusCode.NOT_FOUND("User wallet not found");
+            return StatusCode.NOT_FOUND("Wallet not found");
         }
 
-        const currentBalance = walletRows[0].balance;
-
-        if (totalBetAmount > currentBalance) {
-            return StatusCode.INVALID_ARGUMENT(`လက်ကျန်ငွေ မလုံလောက်ပါ`);
+        if (totalBetAmount > walletRows[0].balance) {
+            return StatusCode.INVALID_ARGUMENT("Balance not enough");
         }
 
-        const statusSql = `
-            SELECT * FROM time_status WHERE weeky_day = ? AND session = ?
-            LIMIT 1
-        `;
+        const now = new Date();
+        const today = now.getDay();
+        const currentTime = now.toTimeString().slice(0, 8);
 
-        const [statusRows] = await connection.query(statusSql, [today, session]);
+        const [statusRows] = await connection.query(
+            `SELECT * FROM time_status WHERE weeky_day = ? AND session = ? LIMIT 1`,
+            [today, session]
+        );
 
         if (statusRows.length === 0) {
-            return StatusCode.NOT_FOUND("session not found");
+            return StatusCode.NOT_FOUND("Session not found");
         }
 
         const status = statusRows[0];
 
-        if (status.status !== 1) {
-            return StatusCode.INVALID_ARGUMENT("ယခု ေန့အတွက် ထိုးရန်  ပိတ်ထားပါသည်");
-        }
-
-        console.log("current Time", currentTime)
-        console.log("status open time", status.open_time)
-        console.log("status close time", status.close_time)
-
-        if (
-            currentTime < status.open_time || currentTime > status.close_time
+        if (status.status !== 1 ||
+            currentTime < status.open_time ||
+            currentTime > status.close_time
         ) {
-            return StatusCode.INVALID_ARGUMENT("ယခု အချိန်အတွက် ထိုးရန်  ပိတ်ထားပါသည်");
+            return StatusCode.INVALID_ARGUMENT("Betting closed");
         }
 
+        const [userRows] = await connection.query(
+            `SELECT id, refer_code FROM users WHERE id = ?`,
+            [user_id]
+        );
+
+        const user = userRows[0];
+        let agent = null;
+
+        if (user.refer_code) {
+            const [agentRows] = await connection.query(
+                `SELECT id, two_d_percent FROM users WHERE agent_code = ?`,
+                [user.refer_code]
+            );
+
+            if (agentRows.length > 0 && agentRows[0].id !== user_id) {
+                agent = agentRows[0];
+            } else {
+                return StatusCode.INVALID_ARGUMENT("Invalid agent");
+            }
+        }
 
         await connection.beginTransaction();
 
-        const numbersToCheck = bets.map(b => String(b.number));
-        const placeholders = numbersToCheck.map(() => '?').join(',');
+        const numbers = bets.map(b => String(b.number));
+        const placeholders = numbers.map(() => '?').join(',');
 
-        const checkLimitSql = `SELECT numbers, amounts, status, status_limit_amount , real_limit_amount FROM two_d_lists WHERE numbers IN (${placeholders})`;
-
-        console.log("Checking Limit SQL:", checkLimitSql, numbersToCheck);
-
-        const [limitRows] = await connection.query(checkLimitSql, numbersToCheck);
+        const [limitRows] = await connection.query(
+            `SELECT numbers, amounts, status, real_limit_amount 
+             FROM two_d_lists 
+             WHERE numbers IN (${placeholders}) FOR UPDATE`,
+            numbers
+        );
 
         const listData = {};
         limitRows.forEach(row => {
-            listData[String(row.numbers)] = {
-                current: row.amounts,
-                limit: row.real_limit_amount,
-                status: row.status
-            };
+            listData[row.numbers] = row;
         });
 
         for (const item of bets) {
-            const numKey = String(item.number);
-            const data = listData[numKey];
+            const data = listData[String(item.number)];
 
-            if (!data) {
-                await connection.rollback();
-                console.log(`Number ${numKey} not found in DB. Available keys:`, Object.keys(listData));
-                return StatusCode.INVALID_ARGUMENT(`Number ${item.number} is invalid or not found.`);
-            }
-            if (data.status === 0) {
-                await connection.rollback();
-                return StatusCode.INVALID_ARGUMENT(`Number ${item.number} ကို ပိတ်ထားပါသည်`);
-            }
-
-            if (data.current + item.amount > data.limit) {
-                await connection.rollback();
-                return StatusCode.INVALID_ARGUMENT(`Number ${item.number} မှာ ထိုးခွင့် ပြည့်သွားပါပြီ (Limit: ${data.limit})`);
+            if (!data) throw new Error(`Number ${item.number} invalid`);
+            if (data.status === 0) throw new Error(`Number ${item.number} closed`);
+            if (data.amounts + item.amount > data.real_limit_amount) {
+                throw new Error(`Number ${item.number} limit exceeded`);
             }
         }
 
-        await connection.query(
+        await safeQuery(
+            connection,
             `UPDATE wallets SET balance = balance - ? WHERE user_id = ?`,
-            [totalBetAmount, user_id]
+            [totalBetAmount, user_id],
+            "Wallet deduct failed"
         );
 
-        const batchId = "BATCH_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
-
-        const insertBetSql = `INSERT INTO bets (batch_id, user_id, number, amount, type, session,  bet_date) 
-                              VALUES (?, ?, ?, ?, ?, ?, NOW())`;
-
-        const updateListSql = `UPDATE two_d_lists SET amounts = amounts + ? WHERE numbers = ?`;
+        const batchId = "BATCH_" + Date.now();
 
         for (const item of bets) {
-            await connection.query(insertBetSql, [
-                batchId,
-                user_id,
-                item.number,
-                item.amount,
-                type,
-                session
-            ]);
+            await safeQuery(
+                connection,
+                `INSERT INTO bets (batch_id, user_id, number, amount, type, session, bet_date)
+                 VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+                [batchId, user_id, item.number, item.amount, type, session],
+                "Bet insert failed"
+            );
 
-            await connection.query(updateListSql, [item.amount, item.number]);
+            await safeQuery(
+                connection,
+                `UPDATE two_d_lists SET amounts = amounts + ? WHERE numbers = ?`,
+                [item.amount, item.number],
+                "List update failed"
+            );
+        }
+
+        if (agent) {
+            if (!agent.two_d_percent || agent.two_d_percent <= 0) {
+                throw new Error("Invalid agent percent");
+            }
+
+            const percent = Number(agent.two_d_percent);
+            const commission = (totalBetAmount * percent) / 100;
+
+            await safeQuery(
+                connection,
+                `INSERT INTO agent_commissions 
+                (agent_id, user_id, batch_id, amount, type, session, two_d_percent, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+                [agent.id, user_id, batchId, commission, "2d", session, percent],
+                "Commission insert failed"
+            );
+
+            await safeQuery(
+                connection,
+                `UPDATE wallets SET balance = balance + ? WHERE user_id = ?`,
+                [commission, agent.id],
+                "Agent wallet update failed"
+            );
         }
 
         await connection.commit();
 
-        return StatusCode.OK("Bet placed successfully", { batch_id: batchId, total_deducted: totalBetAmount });
+        return StatusCode.OK("Bet success", {
+            batch_id: batchId,
+            total: totalBetAmount
+        });
 
-    } catch (error) {
+    } catch (err) {
         if (connection) await connection.rollback();
-
-        console.error("Error placing bet:", error);
-        return StatusCode.UNKNOWN("Database error");
+        console.error(err);
+        return StatusCode.UNKNOWN(err.message);
     } finally {
         if (connection) connection.release();
     }

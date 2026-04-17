@@ -8,6 +8,7 @@ adminTwoDRouter.put("/update-all", authJwt.verifyAdmin, twoDController.updateAll
 adminTwoDRouter.put("/update-one/:id", authJwt.verifyAdmin, twoDController.updateNumberDetailById);
 adminTwoDRouter.get("/list", authJwt.verifyAdmin, twoDController.getTotalAmountForEachNumber);
 adminTwoDRouter.get("/total-bet-amount", authJwt.verifyAdmin, twoDController.getTotalBetAmount);
-adminTwoDRouter.get("/total-payout-amount", twoDController.getTotalPayoutAmount);
+adminTwoDRouter.get("/total-payout-amount", authJwt.verifyAdmin, twoDController.getTotalPayoutAmount);
+adminTwoDRouter.get("/total-agent-commission", authJwt.verifyAdmin, twoDController.getTotalAgentCommission);
 
 export default adminTwoDRouter;

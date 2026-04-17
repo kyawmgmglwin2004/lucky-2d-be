@@ -127,11 +127,24 @@ async function getBalance(req, res) {
     }
 }
 
+async function addReferCode(req, res) {
+    try {
+        const userId = req.user.id;
+        const referCode = req.body.refer_code;
+        const serviceRes = await userService.addReferCode(userId, referCode);
+        return res.status(serviceRes.code).json(serviceRes);
+    } catch (error) {
+        console.error("Error adding refer code:", error);
+        return res.status(500).json(StatusCodes.UNKNOWN("SERVER ERROR"));
+    }
+}
+
 
 export default {
     userLogin,
     userRegister,
     getUserById,
     userRefreshToken,
-    getBalance
+    getBalance,
+    addReferCode
 }

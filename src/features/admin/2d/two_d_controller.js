@@ -62,10 +62,22 @@ async function getTotalPayoutAmount(req, res) {
     }
 }
 
+async function getTotalAgentCommission(req, res) {
+    try {
+        const { filterDate, session } = req.query;
+        const serviceRes = await twoDService.getTotalAgentCommissions(filterDate, session);
+        return res.status(serviceRes.code).json(serviceRes);
+    } catch (error) {
+        console.error("2d get total agent commission :", error);
+        return res.status(500).json(StatusCode.UNKNOWN("SERVER ERROR"));
+    }
+}
+
 export default {
     updateAllNumberDetail,
     updateNumberDetailById,
     getTotalAmountForEachNumber,
     getTotalBetAmount,
-    getTotalPayoutAmount
+    getTotalPayoutAmount,
+    getTotalAgentCommission
 }

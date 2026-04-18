@@ -5,9 +5,9 @@ async function getAllUsers(req, res) {
     try {
         const isActive = parseInt(req.query.is_active);
 
-        const { id, phone, name, page = 1, limit = 10 } = req.query;
+        const { id, phone, name, role, page = 1, limit = 10 } = req.query;
 
-        const users = await usersService.getAlluser(id, isActive, phone, page, name, limit);
+        const users = await usersService.getAlluser(id, isActive, phone, role, page, name, limit);
 
         return res.status(users.code).json(users);
     } catch (error) {

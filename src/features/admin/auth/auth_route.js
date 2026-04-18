@@ -1,6 +1,5 @@
 import { Router } from "express";
 import authController from "./auth_controller.js";
-// import authJwt from "../../middlewear/authJwt.js";
 
 const authRouter = Router();
 

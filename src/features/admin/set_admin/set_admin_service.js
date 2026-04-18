@@ -52,12 +52,12 @@ async function getAllAdmins() {
         connection = await Mysql.getConnection();
         const [admins] = await connection.query(sql);
 
-        if(admins.length === 0) {
+        if (admins.length === 0) {
             return StatusCode.NOT_FOUND("adimins not found");
         }
 
         return StatusCode.OK("get all admins", admins);
-    
+
     } catch (error) {
         console.error("Error get all admins:", error);
         return StatusCode.UNKNOWN("Database error");
@@ -70,8 +70,8 @@ async function getAdminById(id) {
     let connection;
     try {
 
-        const adminId  = Number(id);
-        if(!adminId || typeof adminId !== 'number') {
+        const adminId = Number(id);
+        if (!adminId || typeof adminId !== 'number') {
             console.log("id==", typeof id)
             return StatusCode.INVALID_ARGUMENT("missing Id or Id must be number type")
         }
@@ -90,7 +90,7 @@ async function getAdminById(id) {
         console.error("Error fetching admin by ID:", error);
         return StatusCode.UNKNOWN("Database error");
     } finally {
-         if (connection) connection.release();
+        if (connection) connection.release();
     }
 }
 
@@ -98,7 +98,7 @@ async function updateAdmin(id, business_id, username, phone, password, role) {
     let connection;
     try {
         const adminId = Number(id);
-        
+
         if (!adminId || isNaN(adminId) || typeof adminId !== 'number') {
             return StatusCode.INVALID_ARGUMENT("Missing admin id  or id must be number");
         }
@@ -106,14 +106,14 @@ async function updateAdmin(id, business_id, username, phone, password, role) {
         connection = await Mysql.getConnection();
         const sql1 = "SELECT id FROM admins WHERE id = ?";
 
-        const [checkAdmin] = await connection.query(sql1 , [adminId]);
+        const [checkAdmin] = await connection.query(sql1, [adminId]);
         if (checkAdmin.length === 0) {
             return StatusCode.NOT_FOUND("Admin not found");
         }
 
         if (phone) {
             const phoneSql = "SELECT id FROM admins WHERE phone = ? AND id != ?";
-            const [duplicatePhone] = await connection.query(phoneSql , [phone, adminId]);
+            const [duplicatePhone] = await connection.query(phoneSql, [phone, adminId]);
 
             if (duplicatePhone.length > 0) {
                 return StatusCode.INVALID_ARGUMENT("Phone number already in use by another admin");
@@ -180,7 +180,7 @@ async function deleteAdmin(id) {
 
         const checkSql = "SELECT id FROM admins WHERE id = ?";
 
-        const [checkAdmin] = await connection.query( checkSql, [adminId]);
+        const [checkAdmin] = await connection.query(checkSql, [adminId]);
         if (checkAdmin.length === 0) {
             return StatusCode.NOT_FOUND("Admin not found");
         }
@@ -214,7 +214,7 @@ async function changeAdminPassword(id, oldPassword, newPassword) {
 
         const checkAdmin = "SELECT * FROM admins WHERE id = ?";
 
-        const [adminRows] = await connection.query( checkAdmin, [adminId]);
+        const [adminRows] = await connection.query(checkAdmin, [adminId]);
         if (adminRows.length === 0) {
             return StatusCode.NOT_FOUND("Admin not found");
         }

@@ -43,8 +43,45 @@ async function getTotalAmountForEachNumber(req, res) {
     }
 }
 
+async function getTotalBetAmount(req, res) {
+    try {
+        const { filterDate, session } = req.query;
+        const type = "3d";
+        const serviceRes = await twoDService.getTotalBetAmount(filterDate, type, session);
+        return res.status(serviceRes.code).json(serviceRes);
+    } catch (error) {
+        console.error("3d get total bet amount :", error);
+        return res.status(500).json(StatusCode.UNKNOWN("SERVER ERROR"));
+    }
+}
+
+async function getTotalPayoutAmount(req, res) {
+    try {
+        const { filterDate, session } = req.query;
+        const serviceRes = await twoDService.getTotalPayoutAmount(filterDate, session);
+        return res.status(serviceRes.code).json(serviceRes);
+    } catch (error) {
+        console.error("3d get total payout amount :", error);
+        return res.status(500).json(StatusCode.UNKNOWN("SERVER ERROR"));
+    }
+}
+
+async function getTotalAgentCommissions(req, res) {
+    try {
+        const { filterDate, session } = req.query;
+        const serviceRes = await twoDService.getTotalAgentCommissions(filterDate, session);
+        return res.status(serviceRes.code).json(serviceRes);
+    } catch (error) {
+        console.error("3d get total agent commissions :", error);
+        return res.status(500).json(StatusCode.UNKNOWN("SERVER ERROR"));
+    }
+}
+
 export default {
     updateAllNumberDetail,
     updateNumberDetailById,
-    getTotalAmountForEachNumber
+    getTotalAmountForEachNumber,
+    getTotalBetAmount,
+    getTotalPayoutAmount,
+    getTotalAgentCommissions
 }

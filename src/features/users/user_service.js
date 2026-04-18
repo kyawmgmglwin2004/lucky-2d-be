@@ -149,6 +149,7 @@ async function getUserById(userId) {
             u.name, 
             u.phone,
             u.refer_code,
+            u.agent_code,
             u.role, 
             u.created_at,
             COALESCE(w.balance, 0) AS amount

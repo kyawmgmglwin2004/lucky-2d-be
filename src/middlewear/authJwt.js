@@ -13,7 +13,7 @@ function signAdminAccessToken(admin) {
     userName: admin.userName,
     email: admin.phone,
     businessId: admin.business_id,
-    role: "admin",
+    role: admin.role,
   };
 
   const signOptions = {
@@ -149,15 +149,14 @@ function verifyToken() {
   };
 }
 
-function verifyAdminToken() {
+export function verifyAdmin(allowedRoles = []) {
   return (req, res, next) => {
-
-    console.log("reach")
     const token = _extractToken(req);
 
-
     if (!token) {
-      return res.status(401).json(StatusCode.UNAUTHENTICATED("No token provided"));
+      return res.status(401).json(
+        StatusCode.UNAUTHENTICATED("No token provided")
+      );
     }
 
     let decoded;
@@ -165,11 +164,21 @@ function verifyAdminToken() {
     try {
       decoded = jwt.verify(token, ADM_SECRET);
     } catch (err) {
-      return res.status(401).json(StatusCode.UNAUTHENTICATED("Invalid or expired Admin Token"));
+      return res.status(401).json(
+        StatusCode.UNAUTHENTICATED("Invalid or expired token")
+      );
     }
 
-    if (decoded.role !== "admin") {
-      return res.status(403).json(StatusCode.FORBIDDEN("Access Denied: Admins only"));
+    if (!decoded.role) {
+      return res.status(403).json(
+        StatusCode.UNAUTHENTICATED("Not an admin")
+      );
+    }
+
+    if (allowedRoles.length && !allowedRoles.includes(decoded.role)) {
+      return res.status(403).json(
+        StatusCode.PERMISSION_DENIED("သင့်အတွက်ခွင့်ပြုချက်မရှိပါ")
+      );
     }
 
     req.admin = decoded;
@@ -179,7 +188,7 @@ function verifyAdminToken() {
 
 
 const verifyAnyToken = verifyToken();
-const verifyAdmin = verifyAdminToken();
+// const verifyAdmin = verifyAdminToken();
 
 export default {
   signAdminAccessToken,

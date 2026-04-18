@@ -2,7 +2,7 @@ import StatusCode from "../../../helper/statusCode.js";
 import Mysal from "../../../helper/db.js"
 
 
-async function getAlluser(id, isActive, phone, page, name, limit) {
+async function getAlluser(id, isActive, phone, role, page, name, limit) {
     let connection;
 
     try {
@@ -31,6 +31,11 @@ async function getAlluser(id, isActive, phone, page, name, limit) {
         if (name) {
             whereConditions.push("u.name LIKE ?");
             params.push(`%${name}%`);
+        }
+
+        if (role) {
+            whereConditions.push("u.role = ?");
+            params.push(role);
         }
 
         const whereClause = "WHERE " + whereConditions.join(" AND ");

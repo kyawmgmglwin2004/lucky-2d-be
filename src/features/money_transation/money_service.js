@@ -57,7 +57,7 @@ async function getTopupHistoryDetail(id, transactionType) {
 async function topupRequest(userId, amount, transactionType, paymentMethod, status, imageUrl, slipId) {
     let connection;
     try {
-        if (!userId || isNaN(userId) || typeof userId !== 'number' || !amount || isNaN(amount) || typeof amount !== 'number' || !transactionType || typeof transactionType !== 'string' || !paymentMethod || typeof paymentMethod !== 'string' || !status || typeof status !== 'string' || !imageUrl || typeof imageUrl !== 'string' || !slipId || typeof slipId !== 'number') {
+        if (!userId || isNaN(userId) || typeof userId !== 'number' || !amount || isNaN(amount) || typeof amount !== 'number' || !transactionType || typeof transactionType !== 'string' || !paymentMethod || typeof paymentMethod !== 'string' || !status || typeof status !== 'string' || !imageUrl || typeof imageUrl !== 'string' || !slipId || typeof slipId !== 'number' || slipId.length !== 6 || !/^[0-9]+$/.test(slipId)) {
             return StatusCode.INVALID_ARGUMENT("Invalid top-up request data");
         }
 

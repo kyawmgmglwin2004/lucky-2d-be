@@ -31,13 +31,13 @@ async function updateAllNumberDetails(rate, status_limit_amount, realLimitAmount
 }
 
 
-async function updateNumberDetailById(id, rate, status_limit_amount, real_limit_limit, status) {
+async function updateNumberDetailById(id, rate, status_limit_amount, real_limit_amount, status) {
     let connection;
     try {
         if (!id) {
             return StatusCode.INVALID_ARGUMENT("ID is required");
         }
-        if (!rate || !status_limit_amount || !real_limit_limit || !status) {
+        if (!rate || !status_limit_amount || !real_limit_amount || status === undefined || status === null) {
             return StatusCode.INVALID_ARGUMENT("Missing required fields (rate, limit, status)");
         }
 
@@ -48,7 +48,7 @@ async function updateNumberDetailById(id, rate, status_limit_amount, real_limit_
         `;
 
         connection = await Mysql.getConnection();
-        const [result] = await connection.query(sql, [rate, status_limit_amount, real_limit_limit, status, id]);
+        const [result] = await connection.query(sql, [rate, status_limit_amount, real_limit_amount, status, id]);
 
         if (result.affectedRows === 0) {
             return StatusCode.NOT_FOUND("Number detail not found with this ID");

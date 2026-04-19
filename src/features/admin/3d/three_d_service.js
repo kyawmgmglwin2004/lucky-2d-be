@@ -36,7 +36,7 @@ async function updateNumberDetailById(id, rate, status_limit_amounts, real_limit
         if (!id) {
             return StatusCode.INVALID_ARGUMENT("ID is required");
         }
-        if (!rate || !status_limit_amounts || !real_limit_amounts || !status) {
+        if (!rate || !status_limit_amounts || !real_limit_amounts || status === undefined || status === null) {
             return StatusCode.INVALID_ARGUMENT("Missing required fields (rate, limit, status)");
         }
 

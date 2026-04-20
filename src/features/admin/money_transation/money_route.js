@@ -8,5 +8,7 @@ moneyRouter.get("/topup/history", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, ROLES.
 moneyRouter.get("/withdraw/history", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, ROLES.SET_ADMIN, ROLES.VIEWER_ADMIN]), moneyController.getAllWithdrawHistory);
 moneyRouter.post("/topup/approved/:id", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, ROLES.SET_ADMIN]), moneyController.comfrimTopUpRequest);
 moneyRouter.post("/withdraw/approved/:id", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, ROLES.SET_ADMIN]), moneyController.comfrimWithdrawRequest);
+moneyRouter.get("/total/topup", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, ROLES.SET_ADMIN, ROLES.VIEWER_ADMIN]), moneyController.getTotalTopupAmountToday);
+moneyRouter.get("/total/withdraw", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, ROLES.SET_ADMIN, ROLES.VIEWER_ADMIN]), moneyController.getTotalWithdrawAmountToday);
 
 export default moneyRouter;

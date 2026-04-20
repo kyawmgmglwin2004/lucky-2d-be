@@ -1,6 +1,7 @@
 import cron from "node-cron";
 import fetch from "node-fetch";
 import AutoPayoutService from "./two_d_result_service.js";
+import twoDService from "../admin/2d/two_d_service.js";
 
 async function getResultFromAPI() {
     try {
@@ -137,6 +138,14 @@ async function runAutoPayoutCron(session) {
         );
 
         console.log("✅ Payout Response:", payoutResult);
+
+        if (payoutResult && payoutResult.code === 200) {
+            console.log("🔄 Resetting amounts...");
+
+            const resetRes = await twoDService.resetAllNumberCurrentAmount(session);
+
+            console.log("♻️ Reset Result:", resetRes);
+        }
 
     } catch (err) {
         console.error("❌ Cron job error:", err);

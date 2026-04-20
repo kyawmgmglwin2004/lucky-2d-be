@@ -204,11 +204,37 @@ async function getTotalAgentCommissions(filterDate, session) {
     }
 }
 
+async function resetAllNumberCurrentAmount(session) {
+    let connection;
+    try {
+        const column = session === "morning"
+            ? "morning_amounts"
+            : "evening_amounts";
+
+        const sql = `
+            UPDATE two_d_lists 
+            SET ${column} = 0
+        `;
+
+        connection = await Mysql.getConnection();
+        const [result] = await connection.query(sql);
+
+        return StatusCode.OK("Reset success");
+
+    } catch (error) {
+        console.error("Error reset:", error);
+        return StatusCode.UNKNOWN("Database error");
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
 export default {
     updateAllNumberDetails,
     updateNumberDetailById,
     getTotalAmontForEachNumber,
     getTotalBetAmount,
     getTotalPayoutAmount,
-    getTotalAgentCommissions
+    getTotalAgentCommissions,
+    resetAllNumberCurrentAmount
 };

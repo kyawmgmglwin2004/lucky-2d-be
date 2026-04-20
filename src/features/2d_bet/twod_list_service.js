@@ -14,7 +14,8 @@ async function twoDList(category_key, page, limit) {
                 t.category_key,
                 jt.number,
                 nl.rate,
-                nl.amounts,
+                nl.morning_amounts,
+                nl.evening_amounts,
                 nl.status
             FROM two_d_master_sets t
             JOIN JSON_TABLE(
@@ -368,9 +369,9 @@ async function betTwoD(user_id, bets, type, session) {
         const placeholders = numbers.map(() => '?').join(',');
 
         const [limitRows] = await connection.query(
-            `SELECT numbers, amounts, status, real_limit_amount 
-             FROM two_d_lists 
-             WHERE numbers IN (${placeholders}) FOR UPDATE`,
+            `SELECT numbers, morning_amounts, evening_amounts, status, real_limit_amount 
+     FROM two_d_lists 
+     WHERE numbers IN (${placeholders}) FOR UPDATE`,
             numbers
         );
 
@@ -384,7 +385,11 @@ async function betTwoD(user_id, bets, type, session) {
 
             if (!data) throw new Error(`Number ${item.number} invalid`);
             if (data.status === 0) throw new Error(`Number ${item.number} closed`);
-            if (data.amounts + item.amount > data.real_limit_amount) {
+            const currentAmount = session === 'morning'
+                ? data.morning_amounts
+                : data.evening_amounts;
+
+            if (currentAmount + item.amount > data.real_limit_amount) {
                 throw new Error(`Number ${item.number} limit exceeded`);
             }
         }
@@ -407,9 +412,18 @@ async function betTwoD(user_id, bets, type, session) {
                 "Bet insert failed"
             );
 
+            // await safeQuery(
+            //     connection,
+            //     `UPDATE two_d_lists SET amounts = amounts + ? WHERE numbers = ?`,
+            //     [item.amount, item.number],
+            //     "List update failed"
+            // );
+
+            const column = session === 'morning' ? 'morning_amounts' : 'evening_amounts';
+
             await safeQuery(
                 connection,
-                `UPDATE two_d_lists SET amounts = amounts + ? WHERE numbers = ?`,
+                `UPDATE two_d_lists SET ${column} = ${column} + ? WHERE numbers = ?`,
                 [item.amount, item.number],
                 "List update failed"
             );

@@ -117,8 +117,38 @@ async function updateTopupRequestStatus(id, status) {
   }
 }
 
+async function getTotalAmountToday(transactionType, status) {
+  let connection;
+  try {
+    const sql = `
+      SELECT SUM(amount) AS total_amount
+      FROM money_transactions
+      WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+      AND transaction_type = ?
+      AND status = ?
+    `;
+
+    connection = await Mysql.getConnection();
+    const [rows] = await connection.query(sql, [transactionType, status]);
+    console.log("rows. payout ==", rows)
+
+    const totalAmount = rows[0].total_amount ?? 0;
+
+    return StatusCode.OK("Total amount calculated successfully", {
+      total_amount: totalAmount
+    });
+
+  } catch (error) {
+    console.error("Error getting total amount today:", error);
+    return StatusCode.UNKNOWN("Database error");
+  } finally {
+    if (connection) connection.release();
+  }
+}
+
 export default {
   getAllRequests,
   comfrimRequest,
-  updateTopupRequestStatus
+  updateTopupRequestStatus,
+  getTotalAmountToday
 }

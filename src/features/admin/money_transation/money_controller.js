@@ -81,10 +81,38 @@ async function updateMoneyTransactionStatus(req, res) {
     }
 }
 
+async function getTotalTopupAmountToday(req, res) {
+    try {
+        const transactionType = "topup";
+        const status = "approved";
+
+        const totalAmount = await moneyService.getTotalAmountToday(transactionType, status);
+        res.status(totalAmount.code).json(totalAmount);
+    } catch (error) {
+        console.error("Error getting total amount today:", error);
+        res.status(500).json(StatusCode.UNKNOWN("Failed to get total amount today"));
+    }
+}
+
+async function getTotalWithdrawAmountToday(req, res) {
+    try {
+        const transactionType = "withdraw";
+        const status = "approved";
+
+        const totalAmount = await moneyService.getTotalAmountToday(transactionType, status);
+        res.status(totalAmount.code).json(totalAmount);
+    } catch (error) {
+        console.error("Error getting total amount today:", error);
+        res.status(500).json(StatusCode.UNKNOWN("Failed to get total amount today"));
+    }
+}
+
 export default {
     getAllTopupHistory,
     getAllWithdrawHistory,
     comfrimTopUpRequest,
     comfrimWithdrawRequest,
-    updateMoneyTransactionStatus
+    updateMoneyTransactionStatus,
+    getTotalTopupAmountToday,
+    getTotalWithdrawAmountToday
 }

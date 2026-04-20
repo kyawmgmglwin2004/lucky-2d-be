@@ -44,23 +44,26 @@ async function getAlluser(id, isActive, phone, role, page, name, limit) {
 
         const sql = `
     SELECT 
-        u.id,
-        u.name,
-        u.phone,
-        u.is_active,
-        u.role,
-        u.agent_code,
-        u.refer_code,
-        u.two_d_percent,
-        u.three_d_percent,
-        u.created_at,
-        w.balance AS balance,
-        COUNT(*) OVER() AS totalRecords
-    FROM users u
-    LEFT JOIN wallets w ON w.user_id = u.id
-    ${whereClause}
-    ORDER BY u.id DESC
-    LIMIT ? OFFSET ?
+    u.*,
+    w.balance,
+    COALESCE(ac.total_commission, 0) AS total_commission,
+    COUNT(*) OVER() AS totalRecords
+
+FROM users u
+
+LEFT JOIN wallets w 
+    ON w.user_id = u.id
+
+LEFT JOIN (
+    SELECT agent_id, SUM(amount) AS total_commission
+    FROM agent_commissions
+    GROUP BY agent_id
+) ac ON ac.agent_id = u.id
+
+${whereClause}
+
+ORDER BY u.id DESC
+LIMIT ? OFFSET ?
 `;
 
         const finalParams = [...params, itemsPerPage, offset];
@@ -229,7 +232,10 @@ async function getAgentCommissionList(agentId, page, limit, filterDate = null) {
                 ac.two_d_percent,
                 ac.three_d_percent,
                 ac.created_at,
-                COUNT(*) OVER() AS totalRecords
+
+                COUNT(*) OVER() AS totalRecords,
+                SUM(ac.amount) OVER() AS totalAmount
+
             FROM agent_commissions ac
             LEFT JOIN users u ON u.id = ac.user_id
             ${whereClause}
@@ -245,23 +251,26 @@ async function getAgentCommissionList(agentId, page, limit, filterDate = null) {
             return StatusCode.NOT_FOUND("agent commission not found");
         }
 
-        const totalRecords = rows[0].totalRecords;
+        const totalRecords = rows[0]?.totalRecords || 0;
+        const totalAmount = rows[0]?.totalAmount || 0;
+
         const totalPages = Math.ceil(totalRecords / itemsPerPage);
 
-        const cleanData = rows.map(({ totalRecords, ...rest }) => rest);
+        const cleanData = rows.map(({ totalRecords, totalAmount, ...rest }) => rest);
 
         const responseData = {
             data: cleanData,
+            summary: {
+                totalAmount
+            },
             pagination: {
-                currentPage: currentPage,
-                totalPages: totalPages,
-                totalRecords: totalRecords,
-                itemsPerPage: itemsPerPage,
+                currentPage,
+                totalPages,
+                totalRecords,
+                itemsPerPage,
                 filterDate: filterDate || "All",
-
             }
         };
-
         return StatusCode.OK("agent commission list", responseData);
 
     } catch (error) {

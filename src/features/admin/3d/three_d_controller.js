@@ -45,9 +45,9 @@ async function getTotalAmountForEachNumber(req, res) {
 
 async function getTotalBetAmount(req, res) {
     try {
-        const { filterDate, session } = req.query;
+        const { startDate, endDate, session } = req.query;
         const type = "3d";
-        const serviceRes = await twoDService.getTotalBetAmount(filterDate, type, session);
+        const serviceRes = await twoDService.getTotalBetAmount(startDate, endDate, type, session);
         return res.status(serviceRes.code).json(serviceRes);
     } catch (error) {
         console.error("3d get total bet amount :", error);
@@ -57,8 +57,8 @@ async function getTotalBetAmount(req, res) {
 
 async function getTotalPayoutAmount(req, res) {
     try {
-        const { filterDate, session } = req.query;
-        const serviceRes = await twoDService.getTotalPayoutAmount(filterDate, session);
+        const { startDate, endDate, session } = req.query;
+        const serviceRes = await twoDService.getTotalPayoutAmount(startDate, endDate, session);
         return res.status(serviceRes.code).json(serviceRes);
     } catch (error) {
         console.error("3d get total payout amount :", error);
@@ -68,8 +68,8 @@ async function getTotalPayoutAmount(req, res) {
 
 async function getTotalAgentCommissions(req, res) {
     try {
-        const { filterDate, session } = req.query;
-        const serviceRes = await twoDService.getTotalAgentCommissions(filterDate, session);
+        const { startDate, endDate, session } = req.query;
+        const serviceRes = await twoDService.getTotalAgentCommissions(startDate, endDate, session);
         return res.status(serviceRes.code).json(serviceRes);
     } catch (error) {
         console.error("3d get total agent commissions :", error);

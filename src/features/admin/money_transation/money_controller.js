@@ -31,13 +31,12 @@ async function getAllWithdrawHistory(req, res) {
 
 async function comfrimTopUpRequest(req, res) {
     try {
-        console.log("BODY:", req.body);
-        console.log("HEADERS:", req.headers);
         const transactionType = 'topup';
         const status = req.body.status;
         const id = parseInt(req.params.id);
+        const adminId = req.body.admin_id;
 
-        const topup = await moneyService.comfrimRequest(id, status, transactionType);
+        const topup = await moneyService.comfrimRequest(id, status, transactionType, adminId);
         res.status(topup.code).json(topup);
 
     } catch (error) {
@@ -46,15 +45,14 @@ async function comfrimTopUpRequest(req, res) {
     }
 }
 
-
 async function comfrimWithdrawRequest(req, res) {
     try {
         const transactionType = 'withdraw';
         const status = req.body.status;
         const id = parseInt(req.params.id);
-        console.log("======", id, status)
+        const adminId = req.body.admin_id;
 
-        const withdraw = await moneyService.comfrimRequest(id, status, transactionType);
+        const withdraw = await moneyService.comfrimRequest(id, status, transactionType, adminId);
         res.status(withdraw.code).json(withdraw);
 
     } catch (error) {

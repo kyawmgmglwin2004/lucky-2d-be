@@ -1,38 +1,35 @@
 import StatusCode from "../../../helper/statusCode.js";
 import Mysql from "../../../helper/db.js";
+import threeDService from "../3d/three_d_service.js";
 
 async function create3DResult(result_numbers, result_date, result_round) {
     let connection;
     try {
-        // Input validation
         if (!result_numbers || typeof result_numbers !== "string" || !result_round || typeof result_round !== "string" || !result_date) {
             return StatusCode.INVALID_ARGUMENT("Missing required fields");
         }
 
-        // Generate round numbers
         function generateRoundNumbers(num) {
-            const str = num.toString().padStart(3, '0'); // always 3 digits
+            const str = num.toString().padStart(3, '0');
 
             if (str.length !== 3) return [];
 
             const digits = str.split('');
             const permutations = new Set();
 
-            // All 3-digit permutations
             for (let i = 0; i < 3; i++) {
                 for (let j = 0; j < 3; j++) {
                     for (let k = 0; k < 3; k++) {
                         if (i !== j && j !== k && i !== k) {
                             const val = digits[i] + digits[j] + digits[k];
-                            permutations.add(val); // string
+                            permutations.add(val);
                         }
                     }
                 }
             }
 
-            permutations.delete(str); // remove original
+            permutations.delete(str);
 
-            // add +1 and -1 as 3-digit strings
             const plusOne = (Number(str) + 1).toString().padStart(3, '0');
             const minusOne = (Number(str) - 1).toString().padStart(3, '0');
 
@@ -44,7 +41,6 @@ async function create3DResult(result_numbers, result_date, result_round) {
 
         connection = await Mysql.getConnection();
 
-        // Check existing result
         const sql1 = `SELECT * FROM three_d_results WHERE result_date = ? AND result_round = ?`;
         const [rows] = await connection.query(sql1, [result_date, result_round]);
         if (rows.length > 0) {
@@ -53,7 +49,6 @@ async function create3DResult(result_numbers, result_date, result_round) {
 
         const roundNumbers = generateRoundNumbers(result_numbers);
 
-        // Insert as string, keep leading zeros
         const sql = `INSERT INTO three_d_results (result_numbers, result_date, result_round, round_numbers) VALUES (?, ?, ?, ?)`;
         const [result] = await connection.query(sql, [result_numbers, result_date, result_round, JSON.stringify(roundNumbers)]);
 
@@ -61,7 +56,6 @@ async function create3DResult(result_numbers, result_date, result_round) {
             return StatusCode.UNKNOWN("3D result creation failed");
         }
 
-        // Run auto payout
         runAutoPayoutService(result_numbers, roundNumbers, result_round, result_date)
             .then(res => console.log("Payout success:", res.message))
             .catch(err => console.error("Payout error:", err));
@@ -257,8 +251,12 @@ async function recordPayoutLog(mainNumber, session, resultDate, totalPaid, detai
     console.log("recordPayoutLog===============", mainNumber, session, resultDate, totalPaid, details);
     let connection;
     try {
-
-        if (!mainNumber || !session || !resultDate || !totalPaid || !details) {
+        console.log("mainNumber : ", mainNumber);
+        console.log("session : ", session);
+        console.log("resultDate : ", resultDate);
+        console.log("totalPaid : ", totalPaid);
+        console.log("details : ", details);
+        if (!mainNumber || !session || !resultDate || totalPaid == null || details == null) {
             return StatusCode.INVALID_ARGUMENT("Missing required fields");
         }
 
@@ -293,9 +291,21 @@ async function runAutoPayoutService(winningNumber, roundNumbers, session, result
             return StatusCode.UNKNOWN("Auto payout failed: " + payoutResult.message);
         }
 
-        await recordPayoutLog(winningNumber, session, resultDate, payoutResult.data.totalPaid, payoutResult.data.details);
+        const recordResult = await recordPayoutLog(winningNumber, session, resultDate, payoutResult.data.totalPaid, payoutResult.data.details);
+
+        if (recordResult.code !== 200) {
+            console.log("Record payout log failed : ", recordResult);
+            throw new Error("Record payout log failed");
+        }
+
+        const resetResult = await threeDService.resetAllNumberCurrentAmount(session);
+
+        if (resetResult.code !== 200) {
+            throw new Error("Reset failed after payout");
+        }
 
         return StatusCode.OK(`Auto payout completed for ${winningNumber} (${session})`, { totalPaid: payoutResult.data.totalPaid });
+
     } catch (error) {
         console.error("Error in auto payout service:", error);
         return StatusCode.UNKNOWN("Database error");

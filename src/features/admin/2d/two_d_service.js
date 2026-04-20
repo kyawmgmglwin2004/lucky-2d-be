@@ -85,21 +85,29 @@ async function getTotalAmontForEachNumber() {
     }
 }
 
-async function getTotalBetAmount(filterDate, type, session) {
+async function getTotalBetAmount(startDate, endDate, type, session) {
     let connection;
     try {
-        if (!filterDate || !type) {
-            return StatusCode.INVALID_ARGUMENT("Missing required fields (filterDate, type)");
+        if (!startDate || !endDate || !type) {
+            return StatusCode.INVALID_ARGUMENT("Missing required fields (startDate, endDate, type)");
         }
+
+        // let sql = `
+        //     SELECT SUM(amount) as totalAmount 
+        //     FROM bets 
+        //     WHERE DATE(bet_date) = ? 
+        //     AND type = ?
+        // `;
 
         let sql = `
             SELECT SUM(amount) as totalAmount 
             FROM bets 
-            WHERE DATE(bet_date) = ? 
+            WHERE bet_date >= ? 
+            AND bet_date < DATE_ADD(?, INTERVAL 1 DAY)
             AND type = ?
         `;
 
-        const params = [filterDate, type];
+        const params = [startDate, endDate, type];
 
         if (session && session !== "all") {
             sql += " AND session = ?";
@@ -123,12 +131,22 @@ async function getTotalBetAmount(filterDate, type, session) {
     }
 }
 
-async function getTotalPayoutAmount(filterDate, session) {
+async function getTotalPayoutAmount(startDate, endDate, session) {
     let connection;
     try {
-        if (!filterDate) {
-            return StatusCode.INVALID_ARGUMENT("Missing required fields (filterDate)");
+        if (!startDate || !endDate) {
+            return StatusCode.INVALID_ARGUMENT("Missing required fields (startDate, endDate)");
         }
+
+        // let sql = `
+        //     SELECT SUM(j.payout) as totalPayout
+        //     FROM payout_logs b,
+        //     JSON_TABLE(b.details, '$[*]' COLUMNS (
+        //         payout INT PATH '$.payout'
+        //     )) j
+        //     WHERE DATE(b.result_date) = ?
+        //    AND CHAR_LENGTH(b.number) = 2
+        // `;
 
         let sql = `
             SELECT SUM(j.payout) as totalPayout
@@ -136,11 +154,12 @@ async function getTotalPayoutAmount(filterDate, session) {
             JSON_TABLE(b.details, '$[*]' COLUMNS (
                 payout INT PATH '$.payout'
             )) j
-            WHERE DATE(b.result_date) = ?
-           AND CHAR_LENGTH(b.number) = 2
+            WHERE b.result_date >= ?
+            AND b.result_date < DATE_ADD(?, INTERVAL 1 DAY)
+            AND CHAR_LENGTH(b.number) = 2
         `;
 
-        const params = [filterDate];
+        const params = [startDate, endDate];
 
         if (session && session !== "all") {
             sql += " AND session = ?";
@@ -165,21 +184,28 @@ async function getTotalPayoutAmount(filterDate, session) {
     }
 }
 
-async function getTotalAgentCommissions(filterDate, session) {
+async function getTotalAgentCommissions(startDate, endDate, session) {
     let connection;
     try {
-        if (!filterDate) {
-            return StatusCode.INVALID_ARGUMENT("Missing required fields (filterDate)");
+        if (!startDate || !endDate) {
+            return StatusCode.INVALID_ARGUMENT("Missing required fields (startDate, endDate)");
         }
 
+        // let sql = `
+        //    SELECT COALESCE(SUM(amount), 0) AS totalAgentCommission
+        //     FROM agent_commissions
+        //     WHERE DATE(created_at) = ?
+        //     AND type = '2d'
+        // `;
         let sql = `
-           SELECT COALESCE(SUM(amount), 0) AS totalAgentCommission
+          SELECT COALESCE(SUM(amount), 0) AS totalAgentCommission
             FROM agent_commissions
-            WHERE DATE(created_at) = ?
+            WHERE created_at >= ?
+            AND created_at < DATE_ADD(?, INTERVAL 1 DAY)
             AND type = '2d'
         `;
 
-        const params = [filterDate];
+        const params = [startDate, endDate];
 
         if (session && session !== "all") {
             sql += " AND session = ?";
@@ -207,6 +233,11 @@ async function getTotalAgentCommissions(filterDate, session) {
 async function resetAllNumberCurrentAmount(session) {
     let connection;
     try {
+
+        if (!session || typeof session !== 'string') {
+            return StatusCode.INVALID_ARGUMENT("Invalid session");
+        }
+
         const column = session === "morning"
             ? "morning_amounts"
             : "evening_amounts";
@@ -218,6 +249,10 @@ async function resetAllNumberCurrentAmount(session) {
 
         connection = await Mysql.getConnection();
         const [result] = await connection.query(sql);
+
+        if (result.affectedRows === 0) {
+            return StatusCode.NOT_FOUND("No number details found to reset");
+        }
 
         return StatusCode.OK("Reset success");
 

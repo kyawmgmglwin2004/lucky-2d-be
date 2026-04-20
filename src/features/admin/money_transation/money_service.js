@@ -9,10 +9,20 @@ async function getAllRequests(transactionType, status) {
     }
 
     let sql = `
-      SELECT mt.*, u.name AS user_name
+      SELECT 
+        mt.*, 
+        u.name AS user_name,
+        a.username AS approved_by_name
+
       FROM money_transactions mt
-      JOIN users u ON mt.user_id = u.id
-      WHERE LOWER(mt.transaction_type) = LOWER(?)
+
+      JOIN users u 
+        ON mt.user_id = u.id
+
+      LEFT JOIN admins a 
+  ON mt.approved_by = a.id
+
+WHERE LOWER(mt.transaction_type) = LOWER(?)
     `;
 
     const params = [transactionType];
@@ -41,10 +51,10 @@ async function getAllRequests(transactionType, status) {
   }
 }
 
-async function comfrimRequest(id, status, transactionType) {
+async function comfrimRequest(id, status, transactionType, adminId) {
   let connection;
   try {
-    if (!id || isNaN(id) || typeof id !== 'number' || !status || typeof status !== 'string' || !transactionType || typeof transactionType !== 'string') {
+    if (!id || isNaN(id) || typeof id !== 'number' || !adminId || isNaN(adminId) || typeof adminId !== 'number' || !status || typeof status !== 'string' || !transactionType || typeof transactionType !== 'string') {
       return StatusCode.INVALID_ARGUMENT("Invalid top-up request ID or status");
     }
 
@@ -62,8 +72,8 @@ async function comfrimRequest(id, status, transactionType) {
     const amount = transaction.amount;
     const userId = transaction.user_id;
 
-    const sql1 = `UPDATE money_transactions SET status = ? WHERE id = ?`;
-    await connection.query(sql1, [status, id]);
+    const sql1 = `UPDATE money_transactions SET status = ? , approved_by = ? WHERE id = ?`;
+    await connection.query(sql1, [status, adminId, id]);
 
     const sql2 = `UPDATE wallets SET balance = balance + ? WHERE user_id = ? AND (balance + ?) >= 0`;
 

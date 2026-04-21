@@ -143,6 +143,10 @@ async function userRegister(name, phone, password) {
 async function getUserById(userId) {
   let connection;
   try {
+    const id = Number(userId);
+    if (!userId || typeof userId !== "number") {
+      return StatusCode.INVALID_ARGUMENT("Invalid user ID");
+    }
     const sql = `
         SELECT 
             u.id, 

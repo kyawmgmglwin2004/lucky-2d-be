@@ -339,7 +339,7 @@ async function betTwoD(user_id, bets, type, session) {
             currentTime < status.open_time ||
             currentTime > status.close_time
         ) {
-            return StatusCode.INVALID_ARGUMENT("Betting closed");
+            return StatusCode.INVALID_ARGUMENT("2d ထိုးချိန်ကျော်လွန်သွားပါပြီ");
         }
 
         const [userRows] = await connection.query(

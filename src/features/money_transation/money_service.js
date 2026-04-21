@@ -156,7 +156,7 @@ async function withdrawRequest(userId, password, amount, transactionType, paymen
         const currentBalance = amountRows[0].balance;
 
         if (currentBalance < amount) {
-            return StatusCode.INVALID_ARGUMENT("Insufficient balance");
+            return StatusCode.INVALID_ARGUMENT("လက်ကျန်ငွေမလုံလောက်ပါ");
         }
 
         const pendingSql = `

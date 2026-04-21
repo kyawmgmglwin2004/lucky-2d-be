@@ -24,9 +24,6 @@ async function adminLogin(req, res) {
             const admin = serviceRes.data;
             const accessToken = authJwt.signAdminAccessToken(admin);
             const adminRefreshToken = authJwt.signAdminRefreshToken(admin);
-            console.log("Admin login successful========:", admin);
-            console.log("Access Token========:", accessToken);
-            console.log("Refresh Token========:", adminRefreshToken);
             await adminService.saveRefreshToken(admin.id, adminRefreshToken);
 
             res.cookie('adminRefreshToken', adminRefreshToken, {
@@ -49,6 +46,34 @@ async function adminLogin(req, res) {
     }
 }
 
+// async function adminRefreshToken(req, res) {
+//     try {
+//         const requestToken = req.cookies?.adminRefreshToken;
+
+//         if (!requestToken) {
+//             return res.status(401).json(StatusCode.UNAUTHENTICATED("No Refresh Token"));
+//         }
+
+//         const admin = await adminService.findAdminByRefreshToken(requestToken);
+//         if (!admin) {
+//             return res.status(401).json(StatusCode.UNAUTHENTICATED("Invalid Refresh Token"));
+//         }
+//         jwt.verify(requestToken, ADM_SECRET, (err, decoded) => {
+//             if (err || admin.data.id !== decoded.id) {
+//                 return res.status(401).json(StatusCode.UNAUTHENTICATED("Token verification failed"));
+//             }
+//             const adminData = admin.data;
+//             const newAccessToken = authJwt.signAdminAccessToken(adminData);
+
+//             return res.status(200).json(StatusCode.OK("Token Refreshed", { accessToken: newAccessToken }));
+//         });
+
+//     } catch (error) {
+//         console.error("Refresh Token Error:", error);
+//         return res.status(500).json(StatusCode.UNKNOWN("SERVER ERROR"));
+//     }
+// }
+
 async function adminRefreshToken(req, res) {
     try {
         const requestToken = req.cookies?.adminRefreshToken;
@@ -58,18 +83,27 @@ async function adminRefreshToken(req, res) {
         }
 
         const admin = await adminService.findAdminByRefreshToken(requestToken);
-        if (!admin) {
+
+        if (!admin || !admin.data) {
             return res.status(401).json(StatusCode.UNAUTHENTICATED("Invalid Refresh Token"));
         }
-        jwt.verify(requestToken, ADM_SECRET, (err, decoded) => {
-            if (err || admin.data.id !== decoded.id) {
-                return res.status(401).json(StatusCode.UNAUTHENTICATED("Token verification failed"));
-            }
-            const adminData = admin.data;
-            const newAccessToken = authJwt.signAdminAccessToken(adminData);
 
-            return res.status(200).json(StatusCode.OK("Token Refreshed", { accessToken: newAccessToken }));
-        });
+        let decoded;
+        try {
+            decoded = jwt.verify(requestToken, ADM_SECRET);
+        } catch (err) {
+            return res.status(401).json(StatusCode.UNAUTHENTICATED("Token verification failed"));
+        }
+
+        if (admin.data.id !== decoded.id) {
+            return res.status(401).json(StatusCode.UNAUTHENTICATED("Token mismatch"));
+        }
+
+        const newAccessToken = authJwt.signAdminAccessToken(admin.data);
+
+        return res.status(200).json(
+            StatusCode.OK("Token Refreshed", { accessToken: newAccessToken })
+        );
 
     } catch (error) {
         console.error("Refresh Token Error:", error);

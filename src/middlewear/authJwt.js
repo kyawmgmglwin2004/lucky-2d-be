@@ -17,7 +17,7 @@ function signAdminAccessToken(admin) {
   };
 
   const signOptions = {
-    expiresIn: "10m",
+    expiresIn: "1m",
   };
 
   return jwt.sign(payload, ADM_SECRET, signOptions);
@@ -49,7 +49,7 @@ function signUserAccessToken(user) {
   };
 
   const signOptions = {
-    expiresIn: "10m",
+    expiresIn: "1m",
   };
 
   return jwt.sign(payload, User_SECRET, signOptions);

@@ -42,29 +42,66 @@ async function userLogin(req, res) {
     }
 }
 
+// async function userRefreshToken(req, res) {
+//     try {
+//         const requestToken = req.cookies?.userRefreshToken;
+//         if (!requestToken) {
+//             return res.status(401).json(StatusCodes.UNAUTHENTICATED("No Refresh Token"));
+//         }
+//         const user = await userService.findUserByRefreshToken(requestToken);
+//         if (!user) {
+//             return res.status(401).json(StatusCodes.UNAUTHENTICATED("Invalid Refresh Token"));
+//         }
+//         console.log("user : ", user);
+//         console.log("secret : ", USER_SECRET);
+//         jwt.verify(requestToken, USER_SECRET, (err, decoded) => {
+//             if (err || user.data.id !== decoded.id) {
+
+//                 console.log("Token verification failed", err, decoded, user.data.id);
+
+//                 return res.status(401).json(StatusCodes.UNAUTHENTICATED("Token verification failed"));
+//             }
+//             const userData = user.data;
+//             const newAccessToken = authJwt.signUserAccessToken(userData);
+//             return res.status(200).json(StatusCodes.OK("Token Refreshed", { accessToken: newAccessToken }));
+//         });
+//     } catch (error) {
+//         console.error("Refresh Token Error:", error);
+//         return res.status(500).json(StatusCodes.UNKNOWN("SERVER ERROR"));
+//     }
+// }
+
 async function userRefreshToken(req, res) {
     try {
         const requestToken = req.cookies?.userRefreshToken;
+
         if (!requestToken) {
             return res.status(401).json(StatusCodes.UNAUTHENTICATED("No Refresh Token"));
         }
+
         const user = await userService.findUserByRefreshToken(requestToken);
-        if (!user) {
+
+        if (!user || !user.data) {
             return res.status(401).json(StatusCodes.UNAUTHENTICATED("Invalid Refresh Token"));
         }
-        console.log("user : ", user);
-        console.log("secret : ", USER_SECRET);
-        jwt.verify(requestToken, USER_SECRET, (err, decoded) => {
-            if (err || user.data.id !== decoded.id) {
 
-                console.log("Token verification failed", err, decoded, user.data.id);
+        let decoded;
+        try {
+            decoded = jwt.verify(requestToken, USER_SECRET);
+        } catch (err) {
+            return res.status(401).json(StatusCodes.UNAUTHENTICATED("Token verification failed"));
+        }
 
-                return res.status(401).json(StatusCodes.UNAUTHENTICATED("Token verification failed"));
-            }
-            const userData = user.data;
-            const newAccessToken = authJwt.signUserAccessToken(userData);
-            return res.status(200).json(StatusCodes.OK("Token Refreshed", { accessToken: newAccessToken }));
-        });
+        if (user.data.id !== decoded.id) {
+            return res.status(401).json(StatusCodes.UNAUTHENTICATED("Token mismatch"));
+        }
+
+        const newAccessToken = authJwt.signUserAccessToken(user.data);
+
+        return res.status(200).json(
+            StatusCodes.OK("Token Refreshed", { accessToken: newAccessToken })
+        );
+
     } catch (error) {
         console.error("Refresh Token Error:", error);
         return res.status(500).json(StatusCodes.UNKNOWN("SERVER ERROR"));

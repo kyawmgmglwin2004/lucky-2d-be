@@ -1,55 +1,7 @@
 import StatusCode from "../../../helper/statusCode.js";
 import Mysql from "../../../helper/db.js";
-
-// async function getAllRequests(transactionType, status) {
-//   let connection;
-//   try {
-//     if (!transactionType) {
-//       return StatusCode.INVALID_ARGUMENT("transactionType is required");
-//     }
-
-//     let sql = `
-//       SELECT 
-//         mt.*, 
-//         u.name AS user_name,
-//         a.username AS approved_by_name
-
-//       FROM money_transactions mt
-
-//       JOIN users u 
-//         ON mt.user_id = u.id
-
-//       LEFT JOIN admins a 
-//   ON mt.approved_by = a.id
-
-// WHERE LOWER(mt.transaction_type) = LOWER(?)
-//     `;
-
-//     const params = [transactionType];
-
-//     if (status) {
-//       sql += ` AND mt.status = ?`;
-//       params.push(status);
-//     }
-
-//     sql += ` ORDER BY mt.created_at DESC`;
-
-//     connection = await Mysql.getConnection();
-//     const [rows] = await connection.query(sql, params);
-
-//     if (rows.length === 0) {
-//       return StatusCode.NOT_FOUND("No requests found for this transaction type");
-//     }
-
-//     return StatusCode.OK("Requests retrieved successfully", rows);
-
-//   } catch (error) {
-//     console.error("Error fetching requests:", error);
-//     return StatusCode.UNKNOWN("Database error");
-//   } finally {
-//     if (connection) connection.release();
-//   }
-// }
+import fs from "fs/promises";
+import path from "path";
 
 async function getAllRequests(transactionType, status, page, limit, filterDate) {
   let connection;
@@ -243,9 +195,50 @@ async function getTotalAmountToday(transactionType, status) {
   }
 }
 
+async function deleteAllTransaction() {
+  let connection;
+
+  try {
+    connection = await Mysql.getConnection();
+
+    const [rows] = await connection.query(
+      `SELECT slip_image FROM money_transactions`
+    );
+
+    for (const row of rows) {
+      if (row.slip_image) {
+        try {
+          const filePath = path.join(process.cwd(), row.slip_image);
+          await fs.unlink(filePath);
+        } catch (err) {
+          console.log("File delete error:", err.message);
+        }
+      }
+    }
+
+    const [result] = await connection.query(
+      `DELETE FROM money_transactions`
+    );
+
+    if (result.affectedRows === 0) {
+      return StatusCode.NOT_FOUND("No transactions found");
+    }
+
+    return StatusCode.OK("All transactions + images deleted successfully");
+
+  } catch (error) {
+    console.error("Error deleting all transactions:", error);
+    return StatusCode.UNKNOWN("Database error");
+
+  } finally {
+    if (connection) connection.release();
+  }
+}
+
 export default {
   getAllRequests,
   comfrimRequest,
   updateTopupRequestStatus,
-  getTotalAmountToday
+  getTotalAmountToday,
+  deleteAllTransaction
 }

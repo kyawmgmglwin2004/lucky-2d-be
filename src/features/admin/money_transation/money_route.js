@@ -10,5 +10,6 @@ moneyRouter.post("/topup/approved/:id", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, 
 moneyRouter.post("/withdraw/approved/:id", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, ROLES.SET_ADMIN]), moneyController.comfrimWithdrawRequest);
 moneyRouter.get("/total/topup", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, ROLES.SET_ADMIN, ROLES.VIEWER_ADMIN]), moneyController.getTotalTopupAmountToday);
 moneyRouter.get("/total/withdraw", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, ROLES.SET_ADMIN, ROLES.VIEWER_ADMIN]), moneyController.getTotalWithdrawAmountToday);
+moneyRouter.delete("/delete/all", authJwt.verifyAdmin([ROLES.SUPER_ADMIN]), moneyController.deleteAllTransaction);
 
 export default moneyRouter;

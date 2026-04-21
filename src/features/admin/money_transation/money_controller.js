@@ -104,6 +104,16 @@ async function getTotalWithdrawAmountToday(req, res) {
     }
 }
 
+async function deleteAllTransaction(req, res) {
+    try {
+        const result = await moneyService.deleteAllTransaction();
+        res.status(result.code).json(result);
+    } catch (error) {
+        console.error("Error deleting all transactions:", error);
+        res.status(500).json(StatusCode.UNKNOWN("Failed to delete all transactions"));
+    }
+}
+
 export default {
     getAllTopupHistory,
     getAllWithdrawHistory,
@@ -111,5 +121,6 @@ export default {
     comfrimWithdrawRequest,
     updateMoneyTransactionStatus,
     getTotalTopupAmountToday,
-    getTotalWithdrawAmountToday
+    getTotalWithdrawAmountToday,
+    deleteAllTransaction
 }

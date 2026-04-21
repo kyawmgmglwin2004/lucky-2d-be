@@ -10,7 +10,7 @@ const app = express();
 
 
 app.use(cors({
-  origin: ["http://192.168.1.10:5173", "http://localhost:5173", "https://2d.gttechsolutions.online", "https://tourmaline-stardust-5fcedc.netlify.app", "https://frontend.uaungminsoe.com", "https://zay2d3d.com"],
+  origin: ["http://192.168.1.10:5173", "http://localhost:5173", "https://2d.gttechsolutions.online", "https://tourmaline-stardust-5fcedc.netlify.app", "https://frontend.uaungminsoe.com", "https://zay2d3d.com", "https://admin.zay2d3d.com"],
 
   credentials: true
 }));

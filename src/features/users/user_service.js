@@ -118,7 +118,7 @@ async function userRegister(name, phone, password) {
       return StatusCode.UNKNOWN("User registration failed");
     }
 
-    const walletSql = 'INSERT INTO wallets (user_id, balance) VALUES (?, 100000)';
+    const walletSql = 'INSERT INTO wallets (user_id, balance) VALUES (?, 0)';
 
     const [walletResult] = await connection.query(walletSql, [result.insertId]);
 

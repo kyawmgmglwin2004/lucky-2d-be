@@ -14,6 +14,8 @@ async function twoDList(category_key, page, limit) {
                 t.category_key,
                 jt.number,
                 nl.rate,
+                nl.real_limit_amount,
+                nl.status_limit_amount,
                 nl.morning_amounts,
                 nl.evening_amounts,
                 nl.status

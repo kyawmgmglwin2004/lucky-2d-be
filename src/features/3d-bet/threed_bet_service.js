@@ -203,7 +203,8 @@ async function threeDList(category_key) {
         t.category_key,
         jt.number,
         nl.rate,
-        nl.amounts,
+        nl.first_amounts,
+        nl.second_amounts,
         nl.status
     FROM three_d_master_sets t
     JOIN JSON_TABLE(

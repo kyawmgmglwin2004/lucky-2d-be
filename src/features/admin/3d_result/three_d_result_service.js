@@ -248,14 +248,8 @@ async function autoPayout(resultNumber, roundNumbers, session, resultDate) {
 }
 
 async function recordPayoutLog(mainNumber, session, resultDate, totalPaid, details) {
-    console.log("recordPayoutLog===============", mainNumber, session, resultDate, totalPaid, details);
     let connection;
     try {
-        console.log("mainNumber : ", mainNumber);
-        console.log("session : ", session);
-        console.log("resultDate : ", resultDate);
-        console.log("totalPaid : ", totalPaid);
-        console.log("details : ", details);
         if (!mainNumber || !session || !resultDate || totalPaid == null || details == null) {
             return StatusCode.INVALID_ARGUMENT("Missing required fields");
         }

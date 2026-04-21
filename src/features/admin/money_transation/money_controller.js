@@ -4,9 +4,8 @@ import StatusCode from "../../../helper/statusCode.js";
 async function getAllTopupHistory(req, res) {
     try {
         const transactionType = "topup";
-        const status = req.query.status;
-
-        const transactions = await moneyService.getAllRequests(transactionType, status);
+        const { status, page = 1, limit = 10, filterDate } = req.query;
+        const transactions = await moneyService.getAllRequests(transactionType, status, page, limit, filterDate);
         res.status(transactions.code).json(transactions);
 
     } catch (error) {
@@ -18,9 +17,9 @@ async function getAllTopupHistory(req, res) {
 async function getAllWithdrawHistory(req, res) {
     try {
         const transactionType = "withdraw";
-        const status = req.query.status;
+        const { status, page = 1, limit = 10, filterDate } = req.query;
 
-        const transactions = await moneyService.getAllRequests(transactionType, status);
+        const transactions = await moneyService.getAllRequests(transactionType, status, page, limit, filterDate);
         res.status(transactions.code).json(transactions);
 
     } catch (error) {

@@ -13,7 +13,6 @@ async function updateAllNumberDetail(req, res) {
     }
 }
 
-
 async function updateNumberDetailById(req, res) {
     try {
         const id = req.params.id;
@@ -73,11 +72,40 @@ async function getTotalAgentCommission(req, res) {
     }
 }
 
+async function updateChoiceNumber(req, res) {
+    try {
+        const id = req.params.id;
+        const { status, session, startTime, endTime } = req.body;
+        console.log("id", id);
+        console.log("status", status);
+        console.log("session", session);
+        console.log("startTime", startTime);
+        console.log("endTime", endTime);
+        const serviceRes = await twoDService.updateChoiceNumber(id, status, session, startTime, endTime);
+        return res.status(serviceRes.code).json(serviceRes);
+    } catch (error) {
+        console.error("2d update choice number :", error);
+        return res.status(500).json(StatusCode.UNKNOWN("SERVER ERROR"));
+    }
+}
+
+async function getChoiceNumbers(req, res) {
+    try {
+        const serviceRes = await twoDService.getChoiceNumbers();
+        return res.status(serviceRes.code).json(serviceRes);
+    } catch (error) {
+        console.error("2d get choice numbers :", error);
+        return res.status(500).json(StatusCode.UNKNOWN("SERVER ERROR"));
+    }
+}
+
 export default {
     updateAllNumberDetail,
     updateNumberDetailById,
     getTotalAmountForEachNumber,
     getTotalBetAmount,
     getTotalPayoutAmount,
-    getTotalAgentCommission
+    getTotalAgentCommission,
+    updateChoiceNumber,
+    getChoiceNumbers
 }

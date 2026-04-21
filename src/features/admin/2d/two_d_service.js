@@ -264,6 +264,101 @@ async function resetAllNumberCurrentAmount(session) {
     }
 }
 
+async function updateChoiceNumber(id, status, session, startTime, endTime) {
+    let connection;
+    console.log('session', session)
+
+    try {
+        const idNum = Number(id);
+
+        if (!Number.isInteger(idNum)) {
+            return StatusCode.INVALID_ARGUMENT("Invalid id");
+        }
+
+        let setFields = [];
+        let setParams = [];
+
+        let whereConditions = ['id = ?'];
+        let whereParams = [idNum];
+
+        if (status !== undefined && status !== null) {
+            setFields.push(`status = ?`);
+            setParams.push(status);
+        }
+
+        if (startTime) {
+            setFields.push(`start_time = ?`);
+            setParams.push(startTime);
+        }
+
+        if (endTime) {
+            setFields.push(`end_time = ?`);
+            setParams.push(endTime);
+        }
+
+        if (session) {
+            setFields.push(`session = ?`);
+            setParams.push(session);
+        }
+
+        if (setFields.length === 0) {
+            return StatusCode.INVALID_ARGUMENT("No fields provided to update");
+        }
+
+        const sql = `
+            UPDATE two_d_choice
+            SET ${setFields.join(", ")}
+            WHERE ${whereConditions.join(" AND ")}
+        `;
+
+        connection = await Mysql.getConnection();
+
+        const [result] = await connection.query(sql, [
+            ...setParams,
+            ...whereParams
+        ]);
+
+        console.log("SQL:", sql);
+        console.log("RESULT:", result);
+
+        if (result.affectedRows === 0) {
+            return StatusCode.NOT_FOUND("No row updated (check id/session)");
+        }
+
+        return StatusCode.OK("Update success", {
+            affectedRows: result.affectedRows
+        });
+
+    } catch (error) {
+        console.error("Service Error:", error);
+        return StatusCode.UNKNOWN("Database error");
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
+async function getChoiceNumbers() {
+    let connection;
+    try {
+        const sql = `
+            SELECT * FROM two_d_choice
+        `;
+        connection = await Mysql.getConnection();
+        const [result] = await connection.query(sql);
+
+        if (result.length === 0) {
+            return StatusCode.NOT_FOUND("No numbers found");
+        }
+
+        return StatusCode.OK("Get success", result);
+    } catch (error) {
+        console.error("Service Error:", error);
+        return StatusCode.UNKNOWN("Database error");
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
 export default {
     updateAllNumberDetails,
     updateNumberDetailById,
@@ -271,5 +366,7 @@ export default {
     getTotalBetAmount,
     getTotalPayoutAmount,
     getTotalAgentCommissions,
-    resetAllNumberCurrentAmount
+    resetAllNumberCurrentAmount,
+    updateChoiceNumber,
+    getChoiceNumbers
 };

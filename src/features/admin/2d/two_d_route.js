@@ -11,5 +11,7 @@ adminTwoDRouter.get("/list", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, ROLES.SET_A
 adminTwoDRouter.get("/total-bet-amount", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, ROLES.SET_ADMIN, ROLES.VIEWER_ADMIN]), twoDController.getTotalBetAmount);
 adminTwoDRouter.get("/total-payout-amount", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, ROLES.SET_ADMIN, ROLES.VIEWER_ADMIN]), twoDController.getTotalPayoutAmount);
 adminTwoDRouter.get("/total-agent-commission", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, ROLES.SET_ADMIN, ROLES.VIEWER_ADMIN]), twoDController.getTotalAgentCommission);
+adminTwoDRouter.put("/update-choice-number/:id", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, ROLES.SET_ADMIN]), twoDController.updateChoiceNumber);
+adminTwoDRouter.get("/get-choice-number", authJwt.verifyAnyToken, twoDController.getChoiceNumbers);
 
 export default adminTwoDRouter;

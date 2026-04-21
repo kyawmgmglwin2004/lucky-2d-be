@@ -1,18 +1,93 @@
 import StatusCode from "../../../helper/statusCode.js";
 import Mysql from "../../../helper/db.js";
 
-async function getAllRequests(transactionType, status) {
+// async function getAllRequests(transactionType, status) {
+//   let connection;
+//   try {
+//     if (!transactionType) {
+//       return StatusCode.INVALID_ARGUMENT("transactionType is required");
+//     }
+
+//     let sql = `
+//       SELECT 
+//         mt.*, 
+//         u.name AS user_name,
+//         a.username AS approved_by_name
+
+//       FROM money_transactions mt
+
+//       JOIN users u 
+//         ON mt.user_id = u.id
+
+//       LEFT JOIN admins a 
+//   ON mt.approved_by = a.id
+
+// WHERE LOWER(mt.transaction_type) = LOWER(?)
+//     `;
+
+//     const params = [transactionType];
+
+//     if (status) {
+//       sql += ` AND mt.status = ?`;
+//       params.push(status);
+//     }
+
+//     sql += ` ORDER BY mt.created_at DESC`;
+
+//     connection = await Mysql.getConnection();
+//     const [rows] = await connection.query(sql, params);
+
+//     if (rows.length === 0) {
+//       return StatusCode.NOT_FOUND("No requests found for this transaction type");
+//     }
+
+//     return StatusCode.OK("Requests retrieved successfully", rows);
+
+//   } catch (error) {
+//     console.error("Error fetching requests:", error);
+//     return StatusCode.UNKNOWN("Database error");
+//   } finally {
+//     if (connection) connection.release();
+//   }
+// }
+
+async function getAllRequests(transactionType, status, page, limit, filterDate) {
   let connection;
   try {
     if (!transactionType) {
       return StatusCode.INVALID_ARGUMENT("transactionType is required");
     }
 
+    const currentPage = parseInt(page) > 0 ? parseInt(page) : 1;
+    const itemsPerPage = parseInt(limit) > 0 ? parseInt(limit) : 10;
+    const offset = (currentPage - 1) * itemsPerPage;
+
+    let whereConditions = ["1=1"];
+    let params = [];
+
+    if (transactionType) {
+      whereConditions.push(`LOWER(mt.transaction_type) = LOWER(?)`);
+      params.push(transactionType);
+    }
+
+    if (status) {
+      whereConditions.push(`mt.status = ?`);
+      params.push(status);
+    }
+
+    if (filterDate) {
+      whereConditions.push(`DATE(mt.created_at) = ?`);
+      params.push(filterDate);
+    }
+
+    const whereClause = "WHERE " + whereConditions.join(" AND ");
+
     let sql = `
       SELECT 
         mt.*, 
         u.name AS user_name,
-        a.username AS approved_by_name
+        a.username AS approved_by_name,
+        COUNT(*) OVER() AS totalRecords
 
       FROM money_transactions mt
 
@@ -20,28 +95,39 @@ async function getAllRequests(transactionType, status) {
         ON mt.user_id = u.id
 
       LEFT JOIN admins a 
-  ON mt.approved_by = a.id
+        ON mt.approved_by = a.id
 
-WHERE LOWER(mt.transaction_type) = LOWER(?)
+      ${whereClause}
+
+      ORDER BY mt.created_at DESC
+      LIMIT ? OFFSET ?
     `;
 
-    const params = [transactionType];
-
-    if (status) {
-      sql += ` AND mt.status = ?`;
-      params.push(status);
-    }
-
-    sql += ` ORDER BY mt.created_at DESC`;
+    const finalParams = [...params, itemsPerPage, offset];
 
     connection = await Mysql.getConnection();
-    const [rows] = await connection.query(sql, params);
+    const [rows] = await connection.query(sql, finalParams);
 
     if (rows.length === 0) {
       return StatusCode.NOT_FOUND("No requests found for this transaction type");
     }
 
-    return StatusCode.OK("Requests retrieved successfully", rows);
+    const totalRecords = rows[0].totalRecords;
+    const totalPages = Math.ceil(totalRecords / itemsPerPage);
+
+    const cleanData = rows.map(({ totalRecords, ...rest }) => rest);
+
+    const responseData = {
+      data: cleanData,
+      pagination: {
+        currentPage,
+        totalPages,
+        totalRecords,
+        itemsPerPage
+      }
+    };
+
+    return StatusCode.OK("Requests retrieved successfully", responseData);
 
   } catch (error) {
     console.error("Error fetching requests:", error);
@@ -131,11 +217,12 @@ async function getTotalAmountToday(transactionType, status) {
   let connection;
   try {
     const sql = `
-      SELECT SUM(amount) AS total_amount
-      FROM money_transactions
-      WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 1 DAY)
-      AND transaction_type = ?
-      AND status = ?
+     SELECT SUM(amount) AS total_amount
+  FROM money_transactions
+  WHERE created_at >= CURDATE()
+  AND created_at < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+  AND transaction_type = ?
+  AND status = ?
     `;
 
     connection = await Mysql.getConnection();

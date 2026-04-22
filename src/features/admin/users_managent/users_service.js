@@ -129,34 +129,45 @@ async function banUpdate(id, isActive) {
 
 async function updateUserWallet(user_id, amount) {
     let connection;
+
     try {
         const userId = Number(user_id);
-        if (!userId || isNaN(userId) || typeof userId !== 'number') {
-            return StatusCode.INVALID_ARGUMENT("Missing user id or user id must be number");
+        const balance = Number(amount);
+
+        if (!userId || isNaN(userId)) {
+            return StatusCode.INVALID_ARGUMENT("user id မမှန်ပါ");
         }
 
-        if (!amount || isNaN(amount) || typeof amount !== 'number') {
-            return StatusCode.INVALID_ARGUMENT("Missing amount or amount must be number");
+        if (isNaN(balance)) {
+            return StatusCode.INVALID_ARGUMENT("ပိုက်ဆံ ပမာဏ မမှန်ပါ");
+        }
+
+        if (balance < 0) {
+            return StatusCode.INVALID_ARGUMENT("ပိုက်ဆံ ပမာဏ မမှန်ပါ");
         }
 
         connection = await Mysal.getConnection();
+
         const sql = `SELECT id, balance FROM wallets WHERE user_id = ?`;
-        const [rows] = await connection.query(sql, userId);
+        const [rows] = await connection.query(sql, [userId]);
+
         if (rows.length === 0) {
             return StatusCode.NOT_FOUND("user not found for update");
         }
 
-        const sql1 = `UPDATE wallets SET balance = ? WHERE user_id = ? `;
-        const [result] = await connection.query(sql1, [amount, userId]);
+        const sql1 = `UPDATE wallets SET balance = ? WHERE user_id = ?`;
+        const [result] = await connection.query(sql1, [balance, userId]);
 
         if (result.affectedRows === 0) {
             return StatusCode.UNKNOWN("fail update user wallet");
         }
+
         return StatusCode.OK("user wallet update successfully");
 
     } catch (error) {
-        console.error("Error fetching user:", error);
+        console.error("Error updating wallet:", error);
         return StatusCode.UNKNOWN("Database error");
+
     } finally {
         if (connection) connection.release();
     }

@@ -106,11 +106,17 @@ async function getTotalWithdrawAmountToday(req, res) {
 
 async function deleteAllTransaction(req, res) {
     try {
-        const result = await moneyService.deleteAllTransaction();
+        const { startDate, endDate } = req.body;
+
+        if (!startDate || !endDate) {
+            return res.status(400).json(StatusCode.INVALID_ARGUMENT("Start date and end date are required"));
+        }
+
+        const result = await moneyService.deleteTransactionsByDate(startDate, endDate);
         res.status(result.code).json(result);
     } catch (error) {
-        console.error("Error deleting all transactions:", error);
-        res.status(500).json(StatusCode.UNKNOWN("Failed to delete all transactions"));
+        console.error("Error deleting transactions:", error);
+        res.status(500).json(StatusCode.UNKNOWN("Failed to delete transactions"));
     }
 }
 

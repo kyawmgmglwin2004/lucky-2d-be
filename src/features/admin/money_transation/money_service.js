@@ -195,14 +195,16 @@ async function getTotalAmountToday(transactionType, status) {
   }
 }
 
-async function deleteAllTransaction() {
+async function deleteTransactionsByDate(startDate, endDate) {
   let connection;
 
   try {
     connection = await Mysql.getConnection();
 
     const [rows] = await connection.query(
-      `SELECT slip_image FROM money_transactions`
+      `SELECT slip_image FROM money_transactions 
+       WHERE created_at BETWEEN ? AND ?`,
+      [startDate, endDate]
     );
 
     for (const row of rows) {
@@ -217,28 +219,29 @@ async function deleteAllTransaction() {
     }
 
     const [result] = await connection.query(
-      `DELETE FROM money_transactions`
+      `DELETE FROM money_transactions 
+       WHERE created_at BETWEEN ? AND ?`,
+      [startDate, endDate]
     );
 
     if (result.affectedRows === 0) {
-      return StatusCode.NOT_FOUND("No transactions found");
+      return StatusCode.NOT_FOUND("Transaction မရှိပါ");
     }
 
-    return StatusCode.OK("All transactions + images deleted successfully");
+    return StatusCode.OK("Transaction အောင်မြင်စွာ ဖျက်ပြီးပါပြီ");
 
   } catch (error) {
-    console.error("Error deleting all transactions:", error);
+    console.error("Error deleting transactions:", error);
     return StatusCode.UNKNOWN("Database error");
 
   } finally {
     if (connection) connection.release();
   }
 }
-
 export default {
   getAllRequests,
   comfrimRequest,
   updateTopupRequestStatus,
   getTotalAmountToday,
-  deleteAllTransaction
+  deleteTransactionsByDate
 }

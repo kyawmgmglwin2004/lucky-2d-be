@@ -127,6 +127,41 @@ async function banUpdate(id, isActive) {
     }
 }
 
+async function updateUserWallet(user_id, amount) {
+    let connection;
+    try {
+        const userId = Number(user_id);
+        if (!userId || isNaN(userId) || typeof userId !== 'number') {
+            return StatusCode.INVALID_ARGUMENT("Missing user id or user id must be number");
+        }
+
+        if (!amount || isNaN(amount) || typeof amount !== 'number') {
+            return StatusCode.INVALID_ARGUMENT("Missing amount or amount must be number");
+        }
+
+        connection = await Mysal.getConnection();
+        const sql = `SELECT id, balance FROM wallets WHERE user_id = ?`;
+        const [rows] = await connection.query(sql, userId);
+        if (rows.length === 0) {
+            return StatusCode.NOT_FOUND("user not found for update");
+        }
+
+        const sql1 = `UPDATE wallets SET balance = ? WHERE user_id = ? `;
+        const [result] = await connection.query(sql1, [amount, userId]);
+
+        if (result.affectedRows === 0) {
+            return StatusCode.UNKNOWN("fail update user wallet");
+        }
+        return StatusCode.OK("user wallet update successfully");
+
+    } catch (error) {
+        console.error("Error fetching user:", error);
+        return StatusCode.UNKNOWN("Database error");
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
 async function changeToAgent(id, role, agentCode, twoDpercent, threeDpercent) {
     let connection;
     try {
@@ -285,5 +320,6 @@ export default {
     getAlluser,
     banUpdate,
     changeToAgent,
-    getAgentCommissionList
+    getAgentCommissionList,
+    updateUserWallet
 }

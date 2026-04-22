@@ -9,5 +9,6 @@ usersRouter.get("/allusers", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, ROLES.SET_A
 usersRouter.put("/suspended/:id", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, ROLES.SET_ADMIN]), usersController.suspendedAndUnsuspendedUser);
 usersRouter.put("/change-to-agent/:id", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, ROLES.SET_ADMIN]), usersController.changeToAgent);
 usersRouter.get("/agent-commission", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, ROLES.SET_ADMIN, ROLES.VIEWER_ADMIN]), usersController.getAgentCommissionList);
+usersRouter.put("/update-balance/:user_id", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, ROLES.SET_ADMIN]), usersController.updateUserWallet);
 
 export default usersRouter;

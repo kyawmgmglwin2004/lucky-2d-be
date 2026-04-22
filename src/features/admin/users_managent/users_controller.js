@@ -56,9 +56,24 @@ async function getAgentCommissionList(req, res) {
     }
 }
 
+async function updateUserWallet(req, res) {
+    try {
+        const user_id = req.params.user_id;
+        const { amount } = req.body;
+        console.log(user_id, amount);
+
+        const result = await usersService.updateUserWallet(user_id, amount);
+        return res.status(result.code).json(result);
+    } catch (error) {
+        console.error("Error updating user wallet:", error);
+        res.status(500).json(StatusCode.UNKNOWN("Failed to update user wallet"));
+    }
+}
+
 export default {
     getAllUsers,
     suspendedAndUnsuspendedUser,
     changeToAgent,
-    getAgentCommissionList
+    getAgentCommissionList,
+    updateUserWallet
 }

@@ -42,35 +42,6 @@ async function userLogin(req, res) {
     }
 }
 
-// async function userRefreshToken(req, res) {
-//     try {
-//         const requestToken = req.cookies?.userRefreshToken;
-//         if (!requestToken) {
-//             return res.status(401).json(StatusCodes.UNAUTHENTICATED("No Refresh Token"));
-//         }
-//         const user = await userService.findUserByRefreshToken(requestToken);
-//         if (!user) {
-//             return res.status(401).json(StatusCodes.UNAUTHENTICATED("Invalid Refresh Token"));
-//         }
-//         console.log("user : ", user);
-//         console.log("secret : ", USER_SECRET);
-//         jwt.verify(requestToken, USER_SECRET, (err, decoded) => {
-//             if (err || user.data.id !== decoded.id) {
-
-//                 console.log("Token verification failed", err, decoded, user.data.id);
-
-//                 return res.status(401).json(StatusCodes.UNAUTHENTICATED("Token verification failed"));
-//             }
-//             const userData = user.data;
-//             const newAccessToken = authJwt.signUserAccessToken(userData);
-//             return res.status(200).json(StatusCodes.OK("Token Refreshed", { accessToken: newAccessToken }));
-//         });
-//     } catch (error) {
-//         console.error("Refresh Token Error:", error);
-//         return res.status(500).json(StatusCodes.UNKNOWN("SERVER ERROR"));
-//     }
-// }
-
 async function userRefreshToken(req, res) {
     try {
         const requestToken = req.cookies?.userRefreshToken;
@@ -176,6 +147,19 @@ async function addReferCode(req, res) {
     }
 }
 
+async function updatePasswordById(req, res) {
+    try {
+        const userId = req.user.id;
+        const { password, newPassword } = req.body;
+
+        const serviceRes = await userService.updatePasswordById(userId, password, newPassword);
+        return res.status(serviceRes.code).json(serviceRes);
+    } catch (error) {
+        console.error("Error updating password:", error);
+        return res.status(500).json(StatusCodes.UNKNOWN("SERVER ERROR"));
+    }
+}
+
 
 export default {
     userLogin,
@@ -183,5 +167,6 @@ export default {
     getUserById,
     userRefreshToken,
     getBalance,
-    addReferCode
+    addReferCode,
+    updatePasswordById
 }

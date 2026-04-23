@@ -27,7 +27,7 @@ async function userLogin(phone, password) {
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return StatusCode.INVALID_ARGUMENT("Password is not correct!");
+      return StatusCode.INVALID_ARGUMENT("Password မမှန်ပါ");
     }
     console.log("User login successful:", user);
 
@@ -237,6 +237,44 @@ async function addReferCode(userId, referCode) {
   }
 }
 
+async function updatePasswordById(userId, password, newPassword) {
+  let connection;
+
+  try {
+    if (!userId || typeof userId !== "number" || !password || typeof password !== "string" || !newPassword || typeof newPassword !== "string") {
+      return StatusCode.INVALID_ARGUMENT("Missing required fields");
+    }
+
+    if (password.length < 6 || newPassword.length < 6) {
+      return StatusCode.INVALID_ARGUMENT("Password သည် အနည်းဆုံး 6 လုံးရှိရပါမည်");
+    }
+
+    const sql = `SELECT password FROM users WHERE id = ?`;
+    connection = await Mysql.getConnection();
+    const [rows] = await connection.query(sql, [userId]);
+    if (rows.length === 0) {
+      return StatusCode.NOT_FOUND("User not found");
+    }
+    const user = rows[0];
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return StatusCode.INVALID_ARGUMENT("Password အဟောင်း မှားနေပါသည်");
+    }
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const sql1 = `UPDATE users SET password = ? WHERE id = ?`;
+    const [result] = await connection.query(sql1, [hashedPassword, userId]);
+    if (result.affectedRows === 0) {
+      return StatusCode.UNKNOWN("Password update failed");
+    }
+    return StatusCode.OK("Password အသစ် ေပြောင်းပြီးပါပြီ");
+  } catch (error) {
+    console.error("Error updating password:", error);
+    return StatusCode.UNKNOWN("Database error");
+  } finally {
+    if (connection) connection.release();
+  }
+}
+
 
 export default {
   userLogin,
@@ -245,5 +283,6 @@ export default {
   saveRefreshToken,
   findUserByRefreshToken,
   getBalance,
-  addReferCode
+  addReferCode,
+  updatePasswordById
 }

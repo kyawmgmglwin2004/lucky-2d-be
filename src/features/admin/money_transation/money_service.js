@@ -2,6 +2,7 @@ import StatusCode from "../../../helper/statusCode.js";
 import Mysql from "../../../helper/db.js";
 import fs from "fs/promises";
 import path from "path";
+import bcrypt from "bcrypt";
 
 async function getAllRequests(transactionType, status, page, limit, filterDate) {
   let connection;
@@ -89,14 +90,28 @@ async function getAllRequests(transactionType, status, page, limit, filterDate) 
   }
 }
 
-async function comfrimRequest(id, status, transactionType, adminId) {
+async function comfrimRequest(id, status, transactionType, adminId, adminPassword) {
   let connection;
   try {
-    if (!id || isNaN(id) || typeof id !== 'number' || !adminId || isNaN(adminId) || typeof adminId !== 'number' || !status || typeof status !== 'string' || !transactionType || typeof transactionType !== 'string') {
-      return StatusCode.INVALID_ARGUMENT("Invalid top-up request ID or status");
+
+    const numAdminId = Number(adminId);
+    const numId = Number(id);
+    if (!numId || isNaN(numId) || typeof numId !== 'number' || !numAdminId || isNaN(numAdminId) || typeof numAdminId !== 'number' || !status || typeof status !== 'string' || !transactionType || typeof transactionType !== 'string' || !adminPassword || typeof adminPassword !== 'string') {
+      return StatusCode.INVALID_ARGUMENT("Invalid request ID or status");
     }
 
+    const sqlAdmin = `SELECT password FROM admins WHERE id = ?`;
     connection = await Mysql.getConnection();
+    const [adminResult] = await connection.query(sqlAdmin, [numAdminId]);
+    if (adminResult.length === 0) {
+      return StatusCode.NOT_FOUND("Admin not found");
+    }
+    const password = adminResult[0].password;
+    const isPasswordValid = await bcrypt.compare(adminPassword, password);
+    if (!isPasswordValid) {
+      return StatusCode.INVALID_ARGUMENT("admin password မှားနေပါသည်");
+    }
+
     await connection.beginTransaction();
 
     const sql = `SELECT * FROM money_transactions WHERE id = ? FOR UPDATE`;

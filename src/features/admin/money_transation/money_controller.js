@@ -34,8 +34,9 @@ async function comfrimTopUpRequest(req, res) {
         const status = req.body.status;
         const id = parseInt(req.params.id);
         const adminId = req.body.admin_id;
+        const adminPassword = req.body.admin_password;
 
-        const topup = await moneyService.comfrimRequest(id, status, transactionType, adminId);
+        const topup = await moneyService.comfrimRequest(id, status, transactionType, adminId, adminPassword);
         res.status(topup.code).json(topup);
 
     } catch (error) {
@@ -50,8 +51,9 @@ async function comfrimWithdrawRequest(req, res) {
         const status = req.body.status;
         const id = parseInt(req.params.id);
         const adminId = req.body.admin_id;
+        const adminPassword = req.body.admin_password;
 
-        const withdraw = await moneyService.comfrimRequest(id, status, transactionType, adminId);
+        const withdraw = await moneyService.comfrimRequest(id, status, transactionType, adminId, adminPassword);
         res.status(withdraw.code).json(withdraw);
 
     } catch (error) {

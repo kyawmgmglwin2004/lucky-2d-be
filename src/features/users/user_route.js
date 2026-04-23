@@ -10,5 +10,6 @@ userRouter.get("/me", authJwt.verifyAnyToken, userController.getUserById);
 userRouter.post("/refresh-token", userController.userRefreshToken);
 userRouter.get("/get-balance", authJwt.verifyAnyToken, userController.getBalance);
 userRouter.put("/add-refer-code", authJwt.verifyAnyToken, userController.addReferCode);
+userRouter.put("/update-password", authJwt.verifyAnyToken, userController.updatePasswordById);
 
 export default userRouter;

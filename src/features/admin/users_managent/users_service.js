@@ -99,7 +99,6 @@ LIMIT ? OFFSET ?
     }
 }
 
-
 async function banUpdate(id, isActive) {
     let connection;
 
@@ -326,11 +325,50 @@ async function getAgentCommissionList(agentId, page, limit, filterDate = null) {
         if (connection) connection.release();
     }
 }
+async function getAlluserTotalBalence() {
+    let connection;
+    try {
+        connection = await Mysal.getConnection();
+        const sql = `SELECT SUM(balance) AS totalBalance FROM wallets`;
+        const [rows] = await connection.query(sql);
+        if (rows.length === 0) {
+            return StatusCode.NOT_FOUND("user total balence not found");
+        }
+        const totalBalance = rows[0]?.totalBalance || 0;
+        return StatusCode.OK("all user total balence", totalBalance);
+    } catch (error) {
+        console.error("Error fetching all user total balence:", error);
+        return StatusCode.UNKNOWN("Database error");
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
+async function getAllAgentTotalCommission() {
+    let connection;
+    try {
+        connection = await Mysal.getConnection();
+        const sql = `SELECT SUM(amount) AS totalCommission FROM agent_commissions`;
+        const [rows] = await connection.query(sql);
+        if (rows.length === 0) {
+            return StatusCode.NOT_FOUND("agent total commission not found");
+        }
+        const totalCommission = rows[0]?.totalCommission || 0;
+        return StatusCode.OK("all agent total commission", totalCommission);
+    } catch (error) {
+        console.error("Error fetching all agent total commission:", error);
+        return StatusCode.UNKNOWN("Database error");
+    } finally {
+        if (connection) connection.release();
+    }
+}
 
 export default {
     getAlluser,
     banUpdate,
     changeToAgent,
     getAgentCommissionList,
-    updateUserWallet
+    updateUserWallet,
+    getAlluserTotalBalence,
+    getAllAgentTotalCommission
 }

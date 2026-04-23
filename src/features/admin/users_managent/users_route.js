@@ -10,5 +10,7 @@ usersRouter.put("/suspended/:id", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, ROLES.
 usersRouter.put("/change-to-agent/:id", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, ROLES.SET_ADMIN]), usersController.changeToAgent);
 usersRouter.get("/agent-commission", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, ROLES.SET_ADMIN, ROLES.VIEWER_ADMIN]), usersController.getAgentCommissionList);
 usersRouter.put("/update-balance/:user_id", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, ROLES.SET_ADMIN]), usersController.updateUserWallet);
+usersRouter.get("/allusers-total-balance", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, ROLES.SET_ADMIN, ROLES.VIEWER_ADMIN]), usersController.getAlluserTotalBalence);
+usersRouter.get("/allagents-total-commission", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, ROLES.SET_ADMIN, ROLES.VIEWER_ADMIN]), usersController.getAllAgentTotalCommission);
 
-export default usersRouter;
+export default usersRouter; 

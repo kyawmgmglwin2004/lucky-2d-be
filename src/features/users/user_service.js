@@ -40,7 +40,6 @@ async function userLogin(phone, password) {
   }
 }
 
-
 async function saveRefreshToken(userId, refreshToken) {
   let connection;
   try {

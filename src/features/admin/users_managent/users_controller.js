@@ -60,7 +60,6 @@ async function updateUserWallet(req, res) {
     try {
         const user_id = req.params.user_id;
         const { amount } = req.body;
-        console.log(user_id, amount);
 
         const result = await usersService.updateUserWallet(user_id, amount);
         return res.status(result.code).json(result);
@@ -70,10 +69,32 @@ async function updateUserWallet(req, res) {
     }
 }
 
+async function getAlluserTotalBalence(req, res) {
+    try {
+        const result = await usersService.getAlluserTotalBalence();
+        return res.status(result.code).json(result);
+    } catch (error) {
+        console.error("Error getting all user total balence:", error);
+        res.status(500).json(StatusCode.UNKNOWN("Failed to get all user total balence"));
+    }
+}
+
+async function getAllAgentTotalCommission(req, res) {
+    try {
+        const result = await usersService.getAllAgentTotalCommission();
+        return res.status(result.code).json(result);
+    } catch (error) {
+        console.error("Error getting all agent total commission:", error);
+        res.status(500).json(StatusCode.UNKNOWN("Failed to get all agent total commission"));
+    }
+}
+
 export default {
     getAllUsers,
     suspendedAndUnsuspendedUser,
     changeToAgent,
     getAgentCommissionList,
-    updateUserWallet
+    updateUserWallet,
+    getAlluserTotalBalence,
+    getAllAgentTotalCommission
 }

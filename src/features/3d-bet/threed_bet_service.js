@@ -107,7 +107,7 @@ async function betThreeD(user_id, bets, type) {
         const placeholders = numbers.map(() => '?').join(',');
 
         const [limitRows] = await connection.query(
-            `SELECT numbers, amounts, status, real_limit_amounts 
+            `SELECT numbers, first_amounts, second_amounts, status, real_limit_amounts 
              FROM three_d_lists 
              WHERE numbers IN (${placeholders}) FOR UPDATE`,
             numbers
@@ -123,7 +123,11 @@ async function betThreeD(user_id, bets, type) {
 
             if (!data) throw new Error(`Number ${item.number} invalid`);
             if (data.status === 0) throw new Error(`Number ${item.number} closed`);
-            if (data.amounts + item.amount > data.real_limit_amounts) {
+            const currentAmount = session === "first round"
+                ? data.first_amounts
+                : data.second_amounts;
+
+            if (currentAmount + item.amount > data.real_limit_amounts) {
                 throw new Error(`Number ${item.number} limit exceeded`);
             }
         }
@@ -146,9 +150,11 @@ async function betThreeD(user_id, bets, type) {
                 "Bet insert failed"
             );
 
+            const column = session === "first round" ? "first_amounts" : "second_amounts";
+
             await safeQuery(
                 connection,
-                `UPDATE three_d_lists SET amounts = amounts + ? WHERE numbers = ?`,
+                `UPDATE three_d_lists SET ${column} = ${column} + ? WHERE numbers = ?`,
                 [item.amount, item.number],
                 "List update failed"
             );

@@ -165,7 +165,7 @@ cron.schedule(
 );
 
 cron.schedule(
-    "34 16 * * 1-5",
+    "31 16 * * 1-5",
     async () => {
         console.log("⏰ 4:31 PM Cron Triggered");
         await runAutoPayoutCron("evening");

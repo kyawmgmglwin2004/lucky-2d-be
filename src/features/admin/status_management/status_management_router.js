@@ -5,9 +5,9 @@ import { ROLES } from "../../../middlewear/admin_roles.js";
 
 const statusManagementRouter = Router();
 
-statusManagementRouter.get("/get-status", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, ROLES.SET_ADMIN, ROLES.VIEWER_ADMIN]), statusManagementController.getStatus);
+statusManagementRouter.get("/get-status", authJwt.verifyAnyToken(), statusManagementController.getStatus);
 statusManagementRouter.put("/update-status/:id", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, ROLES.SET_ADMIN]), statusManagementController.updateStatus);
-statusManagementRouter.get("/get-status-3d", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, ROLES.SET_ADMIN, ROLES.VIEWER_ADMIN]), statusManagementController.getStatusForThreeD);
+statusManagementRouter.get("/get-status-3d", authJwt.verifyAnyToken(), statusManagementController.getStatusForThreeD);
 statusManagementRouter.put("/update-status-3d/:id", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, ROLES.SET_ADMIN]), statusManagementController.updateStatusForThreeD);
 
 export default statusManagementRouter;  

@@ -1,20 +1,36 @@
 import StatusCode from "../../../helper/statusCode.js";
 import Mysql from "../../../helper/db.js";
 
-async function updateAllNumberDetails(rate, status_limit_amounts, real_limit_amounts) {
+async function updateAllNumberDetails(rate, round_rate, status_limit_amounts, real_limit_amounts) {
     let connection;
     try {
-        if (!rate || !status_limit_amounts || !real_limit_amounts) {
+        if (
+            rate === undefined ||
+            round_rate === undefined ||
+            status_limit_amounts === undefined ||
+            real_limit_amounts === undefined
+        ) {
             return StatusCode.INVALID_ARGUMENT("Missing required fields");
+        }
+
+        if (
+            isNaN(rate) ||
+            isNaN(round_rate) ||
+            Number(rate) < 0 ||
+            Number(round_rate) < 0
+        ) {
+            return StatusCode.INVALID_ARGUMENT(
+                "rate and round_rate 0 ထက်ကြီးရပါမယ်"
+            );
         }
 
         const sql = `
             UPDATE three_d_lists 
-            SET rate = ?, status_limit_amounts = ?, real_limit_amounts = ?
+            SET rate = ?, round_rate = ?, status_limit_amounts = ?, real_limit_amounts = ?
         `;
 
         connection = await Mysql.getConnection();
-        const [result] = await connection.query(sql, [rate, status_limit_amounts, real_limit_amounts]);
+        const [result] = await connection.query(sql, [rate, round_rate, status_limit_amounts, real_limit_amounts]);
 
         if (result.affectedRows === 0) {
             return StatusCode.UNKNOWN("set number detail error")
@@ -36,18 +52,32 @@ async function updateNumberDetailById(id, rate, status_limit_amounts, real_limit
         if (!id) {
             return StatusCode.INVALID_ARGUMENT("ID is required");
         }
-        if (!rate || !status_limit_amounts || !real_limit_amounts || status === undefined || status === null) {
+        if (rate === undefined ||
+            round_rate === undefined ||
+            status_limit_amounts === undefined ||
+            real_limit_amounts === undefined || status === undefined || status === null) {
             return StatusCode.INVALID_ARGUMENT("Missing required fields (rate, limit, status)");
+        }
+
+        if (
+            isNaN(rate) ||
+            isNaN(round_rate) ||
+            Number(rate) < 0 ||
+            Number(round_rate) < 0
+        ) {
+            return StatusCode.INVALID_ARGUMENT(
+                "rate and round_rate 0 ထက်ကြီးရပါမယ်"
+            );
         }
 
         const sql = `
             UPDATE three_d_lists 
-            SET rate = ?, status_limit_amounts = ?, real_limit_amounts = ? , status = ? 
+            SET rate = ?, round_rate = ?, status_limit_amounts = ?, real_limit_amounts = ? , status = ? 
             WHERE id = ?
         `;
 
         connection = await Mysql.getConnection();
-        const [result] = await connection.query(sql, [rate, status_limit_amounts, real_limit_amounts, status, id]);
+        const [result] = await connection.query(sql, [rate, round_rate, status_limit_amounts, real_limit_amounts, status, id]);
 
         if (result.affectedRows === 0) {
             return StatusCode.NOT_FOUND("Number detail not found with this ID");

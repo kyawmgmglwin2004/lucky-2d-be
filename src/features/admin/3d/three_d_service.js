@@ -46,7 +46,7 @@ async function updateAllNumberDetails(rate, round_rate, status_limit_amounts, re
     }
 }
 
-async function updateNumberDetailById(id, rate, status_limit_amounts, real_limit_amounts, status) {
+async function updateNumberDetailById(id, rate, round_rate, status_limit_amounts, real_limit_amounts, status) {
     let connection;
     try {
         if (!id) {

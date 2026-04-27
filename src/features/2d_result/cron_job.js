@@ -21,6 +21,7 @@ async function getResultFromAPI() {
         }
 
         const data = await res.json();
+        console.log("results =====", data)
         return data;
 
     } catch (err) {
@@ -154,7 +155,7 @@ async function runAutoPayoutCron(session) {
 
 
 cron.schedule(
-    "2 12 * * 1-5",
+    "1 12 * * 1-5",
     async () => {
         console.log("⏰ 12:01 PM Cron Triggered");
         await runAutoPayoutCron("morning");
@@ -165,7 +166,7 @@ cron.schedule(
 );
 
 cron.schedule(
-    "31 16 * * 1-5",
+    "30 16 * * 1-5",
     async () => {
         console.log("⏰ 4:31 PM Cron Triggered");
         await runAutoPayoutCron("evening");

@@ -5,7 +5,7 @@ import bcrypt from 'bcrypt';
 async function getTopupHistory(userId, transactionType) {
     let connection;
     try {
-
+        
         if (!userId || isNaN(userId) || typeof userId !== 'number' || !transactionType || typeof transactionType !== 'string') {
             return StatusCode.INVALID_ARGUMENT("Invalid user ID or transaction type");
         }

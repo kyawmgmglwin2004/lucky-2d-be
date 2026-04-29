@@ -1,5 +1,6 @@
 import StatusCode from "../../helper/statusCode.js";
 import Mysql from "../../helper/db.js";
+import { DateTime } from "luxon";
 
 async function twoDList(category_key, page, limit) {
     let connection;
@@ -322,9 +323,9 @@ async function betTwoD(user_id, bets, type, session) {
             return StatusCode.INVALID_ARGUMENT("Balance not enough");
         }
 
-        const now = new Date();
-        const today = now.getDay();
-        const currentTime = now.toTimeString().slice(0, 8);
+        const now = DateTime.now().setZone("Asia/Yangon");
+        const today = now.weekday % 7;
+        const currentTime = now.toFormat("HH:mm:ss");
 
         const [statusRows] = await connection.query(
             `SELECT * FROM time_status WHERE weeky_day = ? AND session = ? LIMIT 1`,

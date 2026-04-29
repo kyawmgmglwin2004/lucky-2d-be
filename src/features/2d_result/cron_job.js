@@ -155,7 +155,7 @@ async function runAutoPayoutCron(session) {
 
 
 cron.schedule(
-    "9 12 * * 1-5",
+    "4 12 * * 1-5",
     async () => {
         console.log("⏰ 12:01 PM Cron Triggered");
         await runAutoPayoutCron("morning");

@@ -3,7 +3,9 @@ import StatusCode from "../../../helper/statusCode.js";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc.js";
 import timezone from "dayjs/plugin/timezone.js";
+import customParseFormat from "dayjs/plugin/customParseFormat.js";
 
+dayjs.extend(customParseFormat);
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
@@ -102,11 +104,17 @@ async function updateStatusForThreeD(id, status, monthlyOpenTime, monthlyCloseTi
             return StatusCode.INVALID_ARGUMENT("Id, status, monthlyOpenTime and monthlyCloseTime are required");
         }
 
-        const openTime = dayjs.tz(monthlyOpenTime, "Asia/Yangon")
-            .format("YYYY-MM-DD HH:mm:ss");
+        const openTime = dayjs.tz(
+            monthlyOpenTime,
+            "M/D/YYYY, h:mm:ss A",
+            "Asia/Yangon"
+        ).format("YYYY-MM-DD HH:mm:ss");
 
-        const closeTime = dayjs.tz(monthlyCloseTime, "Asia/Yangon")
-            .format("YYYY-MM-DD HH:mm:ss");
+        const closeTime = dayjs.tz(
+            monthlyCloseTime,
+            "M/D/YYYY, h:mm:ss A",
+            "Asia/Yangon"
+        ).format("YYYY-MM-DD HH:mm:ss");
 
         connection = await Mysql.getConnection();
 

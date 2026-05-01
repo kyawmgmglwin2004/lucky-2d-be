@@ -64,36 +64,41 @@ async function updateStatus(id, status, openTime, closeTime) {
 
 async function getStatusForThreeD(type) {
     let connection;
+
     try {
         const sql = `SELECT * FROM time_status WHERE type = ?`;
         connection = await Mysql.getConnection();
+
         const [rows] = await connection.query(sql, [type]);
+
         if (rows.length === 0) {
             return StatusCode.NOT_FOUND("Status not found");
         }
 
         const formatted = rows.map(item => ({
             ...item,
+
             monthly_open_time: item.monthly_open_time
-                ? new Date(item.monthly_open_time).toLocaleString("en-US", {
-                    timeZone: "Asia/Yangon"
-                })
+                ? dayjs.utc(item.monthly_open_time)
+                    .tz("Asia/Yangon")
+                    .format("M/D/YYYY, h:mm:ss A")
                 : null,
 
             monthly_close_time: item.monthly_close_time
-                ? new Date(item.monthly_close_time).toLocaleString("en-US", {
-                    timeZone: "Asia/Yangon"
-                })
+                ? dayjs.utc(item.monthly_close_time)
+                    .tz("Asia/Yangon")
+                    .format("M/D/YYYY, h:mm:ss A")
                 : null,
         }));
+
         return StatusCode.OK("Status retrieved successfully", formatted);
+
     } catch (error) {
-        console.error("Error fetching status:", error);
+        console.error(error);
         return StatusCode.UNKNOWN("SERVER ERROR");
+
     } finally {
-        if (connection) {
-            connection.release();
-        }
+        if (connection) connection.release();
     }
 }
 

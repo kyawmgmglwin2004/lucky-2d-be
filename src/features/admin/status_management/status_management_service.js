@@ -77,18 +77,21 @@ async function getStatusForThreeD(type) {
 
         const formatted = rows.map(item => ({
             ...item,
-
             monthly_open_time: item.monthly_open_time
-                ? dayjs.utc(item.monthly_open_time)
-                    .tz("Asia/Yangon")
-                    .format("M/D/YYYY, h:mm:ss A")
+                ? dayjs.tz(
+                    item.monthly_open_time,
+                    "YYYY-MM-DD HH:mm:ss",
+                    "Asia/Yangon"
+                ).format("M/D/YYYY, h:mm:ss A")
                 : null,
 
             monthly_close_time: item.monthly_close_time
-                ? dayjs.utc(item.monthly_close_time)
-                    .tz("Asia/Yangon")
-                    .format("M/D/YYYY, h:mm:ss A")
-                : null,
+                ? dayjs.tz(
+                    item.monthly_close_time,
+                    "YYYY-MM-DD HH:mm:ss",
+                    "Asia/Yangon"
+                ).format("M/D/YYYY, h:mm:ss A")
+                : null
         }));
 
         return StatusCode.OK("Status retrieved successfully", formatted);

@@ -9,4 +9,5 @@ statusManagementRouter.get("/get-status", authJwt.verifyAnyToken, statusManageme
 statusManagementRouter.put("/update-status/:id", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, ROLES.SET_ADMIN]), statusManagementController.updateStatus);
 statusManagementRouter.get("/get-status-3d", authJwt.verifyAnyToken, statusManagementController.getStatusForThreeD);
 statusManagementRouter.put("/update-status-3d/:id", authJwt.verifyAdmin([ROLES.SUPER_ADMIN, ROLES.SET_ADMIN]), statusManagementController.updateStatusForThreeD);
+statusManagementRouter.get("/current-status", authJwt.verifyAnyToken, statusManagementController.getCurrentThreeDStatus);
 export default statusManagementRouter;  

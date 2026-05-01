@@ -162,9 +162,72 @@ async function updateStatusForThreeD(id, status, monthlyOpenTime, monthlyCloseTi
     }
 }
 
+async function getCurrentThreeDStatus() {
+    let connection;
+
+    try {
+        connection = await Mysql.getConnection();
+
+        const now = dayjs()
+            .tz("Asia/Yangon")
+            .format("YYYY-MM-DD HH:mm:ss");
+
+        const sql = `
+            SELECT id,
+                   type,
+                   month,
+                   session,
+                   status,
+                   monthly_open_time,
+                   monthly_close_time
+            FROM time_status
+            WHERE type = ?
+              AND status = 1
+              AND ? >= monthly_open_time
+              AND ? < monthly_close_time
+            ORDER BY monthly_close_time ASC
+            LIMIT 1
+        `;
+
+        const [rows] = await connection.query(sql, ["3d", now, now]);
+
+        if (rows.length === 0) {
+            return StatusCode.NOT_FOUND("3D ထိုးချိန်ကို ယာယီပိတ်ထားပါသည်");
+        }
+
+        const row = rows[0];
+
+        return StatusCode.OK("3D open", {
+            id: row.id,
+            type: row.type,
+            month: row.month,
+            session: row.session,
+            status: row.status,
+
+            monthly_open_time: dayjs(row.monthly_open_time)
+                .tz("Asia/Yangon")
+                .format("M/D/YYYY, h:mm:ss A"),
+
+            monthly_close_time: dayjs(row.monthly_close_time)
+                .tz("Asia/Yangon")
+                .format("M/D/YYYY, h:mm:ss A")
+        });
+
+    } catch (error) {
+        console.error("Error fetching current 3D status:", error);
+        return StatusCode.UNKNOWN("SERVER ERROR");
+
+    } finally {
+        if (connection) {
+            connection.release();
+        }
+    }
+}
+
 export default {
     getStatus,
     updateStatus,
     getStatusForThreeD,
-    updateStatusForThreeD
+    updateStatusForThreeD,
+    getCurrentThreeDStatus,
 }

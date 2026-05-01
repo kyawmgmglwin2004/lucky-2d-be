@@ -1,7 +1,11 @@
 import StatusCode from "../../helper/statusCode.js";
 import Mysql from "../../helper/db.js";
-import { DateTime } from "luxon";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc.js";
+import timezone from "dayjs/plugin/timezone.js";
 
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 async function betThreeD(user_id, bets, type) {
     let connection;
@@ -53,19 +57,19 @@ async function betThreeD(user_id, bets, type) {
             return StatusCode.INVALID_ARGUMENT("Balance not enough");
         }
 
-        const now = new Date(
-            new Date().toLocaleString("en-US", { timeZone: "Asia/Yangon" })
-        );
-
-        const currentMonth = now.getMonth() + 1;
-
-        const session = (now.getDate() >= 1 && now.getDate() <= 16)
-            ? "first round"
-            : "second round";
+        const now = dayjs().tz("Asia/Yangon").format("YYYY-MM-DD HH:mm:ss");
 
         const [statusRows] = await connection.query(
-            `SELECT * FROM time_status WHERE type = ? AND month = ? AND session = ?`,
-            [type, currentMonth, session]
+            `
+                SELECT *
+                FROM time_status
+                WHERE type = ?
+                AND status = 1
+                AND ? BETWEEN monthly_open_time AND monthly_close_time
+                ORDER BY monthly_close_time ASC
+                LIMIT 1
+                `,
+            [type, now]
         );
 
         if (statusRows.length === 0) {
@@ -73,17 +77,8 @@ async function betThreeD(user_id, bets, type) {
         }
 
         const status = statusRows[0];
-
-        console.log("status", status.status);
-        console.log(("open_time", status.monthly_open_time));
-        console.log("close_time", status.monthly_close_time)
-
-        if (status.status !== 1 ||
-            now < new Date(status.monthly_open_time) ||
-            now > new Date(status.monthly_close_time)
-        ) {
-            return StatusCode.INVALID_ARGUMENT("Betting closed");
-        }
+        const session = status.session;
+        const currentMonth = status.month;
 
         const [userRows] = await connection.query(
             `SELECT id, refer_code FROM users WHERE id = ?`,

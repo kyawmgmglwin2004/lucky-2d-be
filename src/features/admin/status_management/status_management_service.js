@@ -102,13 +102,10 @@ async function updateStatusForThreeD(id, status, monthlyOpenTime, monthlyCloseTi
             return StatusCode.INVALID_ARGUMENT("Id, status, monthlyOpenTime and monthlyCloseTime are required");
         }
 
-        // ✅ Convert to Yangon timezone
-        const openTime = dayjs(monthlyOpenTime)
-            .tz("Asia/Yangon")
+        const openTime = dayjs.tz(monthlyOpenTime, "Asia/Yangon")
             .format("YYYY-MM-DD HH:mm:ss");
 
-        const closeTime = dayjs(monthlyCloseTime)
-            .tz("Asia/Yangon")
+        const closeTime = dayjs.tz(monthlyCloseTime, "Asia/Yangon")
             .format("YYYY-MM-DD HH:mm:ss");
 
         connection = await Mysql.getConnection();

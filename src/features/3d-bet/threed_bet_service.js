@@ -1,5 +1,6 @@
 import StatusCode from "../../helper/statusCode.js";
 import Mysql from "../../helper/db.js";
+import { DateTime } from "luxon";
 
 
 async function betThreeD(user_id, bets, type) {
@@ -58,7 +59,7 @@ async function betThreeD(user_id, bets, type) {
 
         const currentMonth = now.getMonth() + 1;
 
-        const session = (now.getDate() >= 2 && now.getDate() <= 16)
+        const session = (now.getDate() >= 1 && now.getDate() <= 16)
             ? "first round"
             : "second round";
 
@@ -72,6 +73,10 @@ async function betThreeD(user_id, bets, type) {
         }
 
         const status = statusRows[0];
+
+        console.log("status", status.status);
+        console.log(("open_time", status.monthly_open_time));
+        console.log("close_time", status.monthly_close_time)
 
         if (status.status !== 1 ||
             now < new Date(status.monthly_open_time) ||

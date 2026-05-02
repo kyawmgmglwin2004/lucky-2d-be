@@ -41,11 +41,21 @@ async function create3DResult(result_numbers, month, result_round) {
 
             permutations.delete(str);
 
-            const plusOne = (Number(str) + 1).toString().padStart(3, '0');
-            const minusOne = (Number(str) - 1).toString().padStart(3, '0');
+            if (str === "000") {
+                permutations.add("001");
+                permutations.add("009");
+            } else {
+                const plusOne = ((Number(str) + 1) % 1000)
+                    .toString()
+                    .padStart(3, '0');
 
-            permutations.add(plusOne);
-            permutations.add(minusOne);
+                const minusOne = ((Number(str) - 1 + 1000) % 1000)
+                    .toString()
+                    .padStart(3, '0');
+
+                permutations.add(plusOne);
+                permutations.add(minusOne);
+            }
 
             return Array.from(permutations);
         }

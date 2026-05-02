@@ -2,10 +2,21 @@ import StatusCode from "../../../helper/statusCode.js";
 import Mysql from "../../../helper/db.js";
 import threeDService from "../3d/three_d_service.js";
 
-async function create3DResult(result_numbers, result_date, result_round) {
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc.js";
+import timezone from "dayjs/plugin/timezone.js";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+async function create3DResult(result_numbers, month, result_round) {
     let connection;
     try {
-        if (!result_numbers || typeof result_numbers !== "string" || !result_round || typeof result_round !== "string" || !result_date) {
+        const result_date = dayjs()
+            .tz("Asia/Yangon")
+            .format("YYYY-MM-DD");
+
+        if (!result_numbers || typeof result_numbers !== "string" || !result_round || typeof result_round !== "string" || !result_date || !month) {
             return StatusCode.INVALID_ARGUMENT("Missing required fields");
         }
 
@@ -41,22 +52,24 @@ async function create3DResult(result_numbers, result_date, result_round) {
 
         connection = await Mysql.getConnection();
 
-        const sql1 = `SELECT * FROM three_d_results WHERE result_date = ? AND result_round = ?`;
-        const [rows] = await connection.query(sql1, [result_date, result_round]);
+        const sql1 = `SELECT * FROM three_d_results WHERE result_date = ? AND result_round = ? AND month = ?`;
+        const [rows] = await connection.query(sql1, [result_date, result_round, month]);
         if (rows.length > 0) {
             return StatusCode.INVALID_ARGUMENT("3D result already exists");
         }
 
         const roundNumbers = generateRoundNumbers(result_numbers);
 
-        const sql = `INSERT INTO three_d_results (result_numbers, result_date, result_round, round_numbers) VALUES (?, ?, ?, ?)`;
-        const [result] = await connection.query(sql, [result_numbers, result_date, result_round, JSON.stringify(roundNumbers)]);
+        const sql = `INSERT INTO three_d_results
+                    (result_numbers, month, result_date, result_round, round_numbers)
+                    VALUES (?, ?, ?, ?, ?)`;
+        const [result] = await connection.query(sql, [result_numbers, month, result_date, result_round, JSON.stringify(roundNumbers)]);
 
         if (result.affectedRows === 0) {
             return StatusCode.UNKNOWN("3D result creation failed");
         }
 
-        runAutoPayoutService(result_numbers, roundNumbers, result_round, result_date)
+        runAutoPayoutService(result_numbers, roundNumbers, result_round, month, result_date)
             .then(res => console.log("Payout success:", res.message))
             .catch(err => console.error("Payout error:", err));
 
@@ -160,10 +173,10 @@ async function isResultProcessed(winningNumber, session, resultDate) {
     }
 }
 
-async function autoPayout(resultNumber, roundNumbers, session, resultDate) {
+async function autoPayout(resultNumber, roundNumbers, session, month, resultDate) {
     let connection;
     try {
-        if (!resultNumber || !session || !resultDate) {
+        if (!resultNumber || !session || !month) {
             return StatusCode.INVALID_ARGUMENT("Missing required fields");
         }
 
@@ -184,10 +197,36 @@ async function autoPayout(resultNumber, roundNumbers, session, resultDate) {
         }
         const mainRate = mainRateResult[0].rate;
 
+        const [statusRows] = await connection.query(
+            `
+                SELECT monthly_open_time, monthly_close_time
+                FROM time_status
+                WHERE type='3d'
+                AND month = ?
+                AND session = ?
+                LIMIT 1
+                `,
+            [month, session]
+        );
+        if (!statusRows.length) {
+            await connection.rollback();
+            return StatusCode.NOT_FOUND("Time status not found");
+        }
+
+        const openTime = statusRows[0].monthly_open_time;
+        const closeTime = statusRows[0].monthly_close_time;
+
         const [mainBets] = await connection.query(
-            `SELECT id, user_id, amount FROM bets 
-             WHERE number = ? AND session = ? AND DATE(bet_date) = ? AND is_paid = 0`,
-            [resultNumber, session, resultDate]
+            `
+                SELECT id,user_id,amount
+                FROM bets
+                WHERE number = ?
+                AND session = ?
+                AND bet_date >= ?
+                AND bet_date < ?
+                AND is_paid = 0
+                `,
+            [resultNumber, session, openTime, closeTime]
         );
 
         for (const bet of mainBets) {
@@ -213,9 +252,14 @@ async function autoPayout(resultNumber, roundNumbers, session, resultDate) {
                 console.log("roundRate : ", roundRate);
 
                 const [roundBets] = await connection.query(
-                    `SELECT id, user_id, amount FROM bets 
-                     WHERE number = ? AND session = ? AND DATE(bet_date) = ? AND is_paid = 0`,
-                    [roundNum, session, resultDate]
+                    `SELECT id, user_id, 
+                    amount FROM bets 
+                    WHERE number = ? 
+                    AND session = ? 
+                    AND bet_date >= ?
+                    AND bet_date < ?
+                    AND is_paid = 0`,
+                    [roundNum, session, openTime, closeTime]
                 );
 
                 console.log("roundBets : ", roundBets);
@@ -273,14 +317,14 @@ async function recordPayoutLog(mainNumber, session, resultDate, totalPaid, detai
     }
 }
 
-async function runAutoPayoutService(winningNumber, roundNumbers, session, resultDate) {
+async function runAutoPayoutService(winningNumber, roundNumbers, session, month, resultDate) {
     try {
         const alreadyProcessed = await isResultProcessed(winningNumber, session, resultDate);
         if (alreadyProcessed) {
             return StatusCode.OK("Result alreay processed");
         }
 
-        const payoutResult = await autoPayout(winningNumber, roundNumbers, session, resultDate);
+        const payoutResult = await autoPayout(winningNumber, roundNumbers, session, month, resultDate);
         if (payoutResult.code !== 200) {
             return StatusCode.UNKNOWN("Auto payout failed: " + payoutResult.message);
         }

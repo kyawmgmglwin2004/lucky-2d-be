@@ -28,18 +28,11 @@ async function createPhone(phone_numbers, acc_name, type) {
             return StatusCode.INVALID_ARGUMENT("Missing phone number, account name, or type");
         }
 
-        const sql1 = `SELECT * FROM transaction_phones WHERE phone_numbers = ?`;
-        connection = await Mysql.getConnection();
-        const [rows] = await connection.query(sql1, [phone_numbers]);
-        if (rows.length > 0) {
-            return StatusCode.INVALID_ARGUMENT("Phone number already exists");
-        }
-
-        const sql2 = `SELECT * FROM transaction_phones WHERE type = ?`;
+        const sql2 = `SELECT * FROM transaction_phones WHERE type = ? AND phone_numbers = ?`;
         connection = await Mysql.getConnection();
         const [rows2] = await connection.query(sql2, [type]);
         if (rows2.length > 0) {
-            return StatusCode.INVALID_ARGUMENT("Type already exists");
+            return StatusCode.INVALID_ARGUMENT("Type and phone already exists");
         }
 
         const sql = `INSERT INTO transaction_phones (phone_numbers, acc_name, type , created_at) VALUES (?, ?, ?, NOW())`;

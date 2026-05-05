@@ -5,7 +5,7 @@ import bcrypt from 'bcrypt';
 async function getTopupHistory(userId, transactionType) {
     let connection;
     try {
-        
+
         if (!userId || isNaN(userId) || typeof userId !== 'number' || !transactionType || typeof transactionType !== 'string') {
             return StatusCode.INVALID_ARGUMENT("Invalid user ID or transaction type");
         }
@@ -111,9 +111,6 @@ async function getWithDrawHistory(userId, transcationType) {
 
 async function withdrawRequest(userId, password, amount, transactionType, paymentMethod, status, bankAccountName, bankAccountNumber) {
     let connection;
-    console.log("reached OKOKOKOKOKOKOKOKOKOKOKOKOKOKOKOKOKOKOKOKOKOKOK");
-
-    console.log("Received withdraw request data:", { userId, amount, transactionType });
 
     try {
         if (!userId || isNaN(userId) || typeof userId !== 'number' ||
@@ -171,9 +168,6 @@ async function withdrawRequest(userId, password, amount, transactionType, paymen
         const numericAmount = Number(amount);
         const numericBalance = Number(currentBalance);
         // 2. Check if (pending + new amount) > balance
-        console.log(typeof totalPending, totalPending);
-        console.log(typeof amount, amount);
-        console.log(typeof currentBalance, currentBalance);
         if ((totalPending + numericAmount) > numericBalance) {
             return StatusCode.INVALID_ARGUMENT("လက်ရှိငွေထုတ်ရန်မလုံလောက်ပါ");
         }

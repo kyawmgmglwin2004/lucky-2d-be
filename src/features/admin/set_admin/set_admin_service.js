@@ -48,7 +48,7 @@ async function createNewAdmin(business_id, username, phone, password, role) {
 async function getAllAdmins() {
     let connection;
     try {
-        const sql = 'SELECT * FROM admins';
+        const sql = 'SELECT * FROM admins WHERE archive = 1';
         connection = await Mysql.getConnection();
         const [admins] = await connection.query(sql);
 
